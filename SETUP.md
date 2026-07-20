@@ -29,16 +29,16 @@ cd $APP_SLUG
 
 ## 2. Substitute placeholders
 
-Replace `<APP_SLUG>`, `<APP_TITLE>`, `<APP_NAME>`, and `<APP_TAGLINE>` in
+Replace `cstr-sensitivity`, `CSTR Sensitivity`, `griffith-pse-cstr-sensitivity`, and `NMPC feedback gains from one solve: parametric sensitivity on a CSTR` in
 every text file (including the Dockerfile and fly.toml):
 
 ```bash
 find . -type f \( -name '*.py' -o -name '*.md' -o -name '*.toml' -o -name 'Dockerfile' \) \
     -exec sed -i \
-    "s|<APP_SLUG>|$APP_SLUG|g; \
-     s|<APP_TITLE>|$APP_TITLE|g; \
-     s|<APP_NAME>|griffith-pse-$APP_SLUG|g; \
-     s|<APP_TAGLINE>|$APP_TAGLINE|g" {} +
+    "s|cstr-sensitivity|$APP_SLUG|g; \
+     s|CSTR Sensitivity|$APP_TITLE|g; \
+     s|griffith-pse-cstr-sensitivity|griffith-pse-$APP_SLUG|g; \
+     s|NMPC feedback gains from one solve: parametric sensitivity on a CSTR|$APP_TAGLINE|g" {} +
 ```
 
 Sanity check: no placeholders left:
@@ -116,10 +116,10 @@ gh secret list --repo devin-griff/$APP_SLUG
 
 In the Cloudflare dashboard for `griffith-pse.com`:
 
-- Type **A**, name `<APP_SLUG>`, value `66.241.124.X` (Fly's edge: get the
+- Type **A**, name `cstr-sensitivity`, value `66.241.124.X` (Fly's edge: get the
   exact IP from `flyctl certs add` below; often the same IP used by other
   apps in your org)
-- Type **AAAA**, name `<APP_SLUG>`, value `2a09:8280:1::112:XXXX:0`
+- Type **AAAA**, name `cstr-sensitivity`, value `2a09:8280:1::112:XXXX:0`
 - **Both records must be DNS-only (gray cloud)**, not Proxied. Streamlit's
   WebSocket connections won't survive Cloudflare's proxy on Fly origins.
 
@@ -156,15 +156,15 @@ that launches the app: matches the existing card pattern on the home page:
 
 ```markdown
 ::: {.g-col-12 .g-col-md-4}
-[![](images/<APP_SLUG>.png){.app-screenshot fig-alt="<APP_TITLE>: click to launch"}](https://<APP_SLUG>.griffith-pse.com){.app-card-link target="_blank"}
+[![](images/cstr-sensitivity.png){.app-screenshot fig-alt="CSTR Sensitivity: click to launch"}](https://cstr-sensitivity.griffith-pse.com){.app-card-link target="_blank"}
 
-### <APP_TITLE>
+### CSTR Sensitivity
 
 <short description of what the app does>
 :::
 ```
 
-You'll need to drop a screenshot of the app at `griffith-pse-site/images/<APP_SLUG>.png`
+You'll need to drop a screenshot of the app at `griffith-pse-site/images/cstr-sensitivity.png`
 (21:10 aspect ratio crops cleanly into the card grid). Push the site repo
 → Cloudflare Pages rebuilds in ~30 s.
 

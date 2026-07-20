@@ -1,6 +1,6 @@
 """
-<APP_TITLE>
-<APP_TAGLINE>
+CSTR Sensitivity
+NMPC feedback gains from one solve: parametric sensitivity on a CSTR
 """
 import base64
 from pathlib import Path
@@ -9,7 +9,7 @@ import streamlit as st
 
 # `set_page_config` must be the first Streamlit call in the script.
 st.set_page_config(
-    page_title="<APP_TITLE>",
+    page_title="CSTR Sensitivity",
     page_icon="favicon.png",
     layout="wide",
 )
@@ -100,8 +100,8 @@ st.markdown(_HOME_LOGO_HTML, unsafe_allow_html=True)
 # st.sidebar.markdown(_HOME_LOGO_HTML, unsafe_allow_html=True)
 
 # ── Title block ───────────────────────────────────────────────────────────────
-st.title("<APP_TITLE>")
-st.caption("<APP_TAGLINE>")
+st.title("CSTR Sensitivity")
+st.caption("NMPC feedback gains from one solve: parametric sensitivity on a CSTR")
 # Alternative title style used by the apps that wrap a Pyomo model around a
 # solver: the title carries a GitHub source link (a title-colored octicon
 # between the title and the tagline) and a "powered by Pyomo + <solver>"
@@ -112,7 +112,7 @@ st.caption("<APP_TAGLINE>")
 # st.markdown(
 #     "<h2 style='margin: 0 0 0.25rem 0; padding: 0; font-size: 1.5rem; "
 #     "font-weight: 700;'>"
-#     "<APP_TITLE> "
+#     "CSTR Sensitivity "
 #     "<a href='<REPO_URL>' target='_blank' "
 #     "title='View source on GitHub' "
 #     "style='display: inline-block; vertical-align: 0.02em; "
@@ -139,7 +139,7 @@ st.caption("<APP_TAGLINE>")
 #     "</h2>",
 #     unsafe_allow_html=True,
 # )
-# st.caption("<APP_TAGLINE>")
+# st.caption("NMPC feedback gains from one solve: parametric sensitivity on a CSTR")
 #
 # Solver references currently in use across the family:
 #   HiGHS:  https://github.com/ERGO-Code/HiGHS   (LP / MILP)

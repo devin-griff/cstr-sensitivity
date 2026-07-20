@@ -1,8 +1,8 @@
-# <APP_TITLE>
+# CSTR Sensitivity
 
-<APP_TAGLINE>
+NMPC feedback gains from one solve: parametric sensitivity on a CSTR
 
-**Live demo:** https://<APP_SLUG>.griffith-pse.com  
+**Live demo:** https://cstr-sensitivity.griffith-pse.com  
 **Home:** https://griffith-pse.com
 
 ## Run locally
