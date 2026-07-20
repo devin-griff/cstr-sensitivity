@@ -466,12 +466,11 @@ def _ic_controls():
     clicked = st.button("Solve", type="primary", use_container_width=True,
                         disabled=solved)
     if clicked:
-        with st.spinner("Solving with POUNCE..."):
-            try:
-                res = solve_baseline(zc0, zt0)
-            except Exception as e:
-                st.error(f"Solver error: {e}")
-                st.stop()
+        try:
+            res = solve_baseline(zc0, zt0)
+        except Exception as e:
+            st.error(f"Solver error: {e}")
+            st.stop()
         st.session_state["base"] = res
         # A new baseline invalidates any existing comparison: the
         # estimate was taken from the old factorization.
