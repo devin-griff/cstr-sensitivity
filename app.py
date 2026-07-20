@@ -817,7 +817,7 @@ st.markdown(
     "</h2>",
     unsafe_allow_html=True,
 )
-_caption_col, _ = st.columns([6, 3])
+_caption_col, _schem_col = st.columns([6, 3])
 with _caption_col:
     st.markdown(
         "Solve the CSTR's optimal control problem from an initial "
@@ -827,6 +827,8 @@ with _caption_col:
         "**Demo** shows the results, **Formulation** explains the model, "
         "and **Logs** keeps the session's event log."
     )
+with _schem_col:
+    show_schematic()
 
 tab_demo, tab_form, tab_logs = st.tabs(["📈  Demo", "📐  Formulation",
                                         "📋  Logs"])
@@ -836,9 +838,7 @@ cmp_res = st.session_state.get("cmp")
 
 with tab_demo:
     if base is None:
-        col_fig, col_text = st.columns([5, 4])
-        with col_fig:
-            show_schematic()
+        col_text, _ = st.columns([6, 3])
         with col_text:
             st.info("Set the initial condition in the sidebar and click "
                     "**Solve**.")
@@ -862,7 +862,7 @@ with tab_demo:
             st.markdown("#### Phase plane")
             show(build_phase, base)
 
-        col_gain, col_schem = st.columns([5, 4])
+        col_gain, _ = st.columns([5, 4])
         with col_gain:
             st.markdown("#### Local feedback gains")
             if base["K"] is None:
@@ -881,8 +881,6 @@ with tab_demo:
                     f"backsolves against the held factorization, "
                     f"{base['gain_s'] * 1e6:.0f} µs."
                 )
-        with col_schem:
-            show_schematic()
 
         st.divider()
         st.markdown("#### Perturbed start: estimate versus re-solve")
