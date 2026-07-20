@@ -150,24 +150,24 @@ solve_btn = st.sidebar.button("Solve", type="primary",
                               use_container_width=True,
                               disabled=not has_pending_changes)
 
-# The perturbed-start section appears once an optimal baseline solve
-# exists: the estimate has no meaning without a held factorization to
-# estimate from.
-est_btn = False
-if base is not None and base["K"] is not None:
-    st.sidebar.divider()
-    st.sidebar.markdown("## Perturbed Start")
-    zc0p = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.61,
-                             0.01, format="%.2f", key="zc0p")
-    zt0p = st.sidebar.slider("$z_t$ temperature", 0.52, 0.70, 0.54,
-                             0.01, format="%.2f", key="zt0p")
-    cmp_res = st.session_state.get("cmp")
-    cmp_current = (cmp_res is not None
-                   and cmp_res["pert_inputs"] == (zc0p, zt0p)
-                   and cmp_res["base_inputs"] == base["inputs"])
-    est_btn = st.sidebar.button("Estimate + Re-solve", type="primary",
-                                use_container_width=True,
-                                disabled=has_pending_changes or cmp_current)
+# The perturbed-start controls are always visible; the button greys out
+# until an up-to-date optimal baseline solve holds a factorization to
+# estimate from, and while the current comparison is already displayed.
+st.sidebar.divider()
+st.sidebar.markdown("## Perturbed Start")
+zc0p = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.61,
+                         0.01, format="%.2f", key="zc0p")
+zt0p = st.sidebar.slider("$z_t$ temperature", 0.52, 0.70, 0.54,
+                         0.01, format="%.2f", key="zt0p")
+cmp_res = st.session_state.get("cmp")
+no_factorization = base is None or base["K"] is None
+cmp_current = (cmp_res is not None and base is not None
+               and cmp_res["pert_inputs"] == (zc0p, zt0p)
+               and cmp_res["base_inputs"] == base["inputs"])
+est_btn = st.sidebar.button("Estimate then Re-solve", type="primary",
+                            use_container_width=True,
+                            disabled=no_factorization
+                            or has_pending_changes or cmp_current)
 
 # ── Model + computation ──────────────────────────────────────────────────────
 
