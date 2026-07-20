@@ -128,32 +128,9 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-# Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
-# no upper variable bound, so the cap sits above the operating region.
-# The floor 0.52 is the coldest start from which the trajectory still
-# settles at the steady state within the horizon for every zc(0): below
-# it the Arrhenius term is essentially frozen, the coolant can only
-# remove heat, and ignition takes longer than the horizon (the empty
-# reactor zc(0) = 0 is the binding case, failing up through 0.51).
-st.sidebar.markdown("## Initial Condition")
-zc0 = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.62, 0.01,
-                        format="%.2f", key="zc0")
-zt0 = st.sidebar.slider("$z_t$ temperature", 0.52, 0.70, 0.52, 0.01,
-                        format="%.2f", key="zt0")
-
-# The Solve button greys out when the cached baseline already reflects the
-# current sliders; the perturbation button below is then the live action.
-base = st.session_state.get("base")
-current_inputs = (zc0, zt0)
-has_pending_changes = base is None or base["inputs"] != current_inputs
-solve_btn = st.sidebar.button("Solve", type="primary",
-                              use_container_width=True,
-                              disabled=not has_pending_changes)
-
-# The perturbed-start section renders further down, once its click
-# handler's dependencies exist: it is a fragment (moving its sliders
-# reruns only that section, not the page), so the click is handled
-# inside it and must be defined after run_perturbation.
+# Both control sections render further down, after their click handlers'
+# dependencies exist: each is a fragment (moving its sliders reruns only
+# that section, not the whole page), and the clicks are handled inside.
 
 # ── Model + computation ──────────────────────────────────────────────────────
 
@@ -461,12 +438,47 @@ def run_perturbation(base, zc0p, zt0p):
     return res
 
 
-# ── Perturbed-start controls ─────────────────────────────────────────────────
-# A fragment: moving these sliders reruns only this section, not the whole
-# page, while the button's disable logic stays live (greyed until an
-# up-to-date optimal baseline holds a factorization, and while the shown
-# comparison already matches the sliders). A click escalates to a full-app
-# rerun to draw the comparison.
+# ── Sidebar control fragments ────────────────────────────────────────────────
+# Each section is a fragment: moving its sliders reruns only that section,
+# not the whole page, while its button's disable logic stays live. Since a
+# fragment cannot see the other section's slider moves, both buttons key
+# off the STORED baseline, never the other fragment's slider positions:
+# the displayed results always belong to the stored baseline, so that is
+# the reference that matters. A click escalates to a full-app rerun.
+#
+# Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
+# no upper variable bound, so the cap sits above the operating region.
+# The floor 0.52 is the coldest start from which the trajectory still
+# settles at the steady state within the horizon for every zc(0): below
+# it the Arrhenius term is essentially frozen, the coolant can only
+# remove heat, and ignition takes longer than the horizon (the empty
+# reactor zc(0) = 0 is the binding case, failing up through 0.51).
+
+@st.fragment
+def _ic_controls():
+    st.markdown("## Initial Condition")
+    zc0 = st.slider("$z_c$ concentration", 0.0, 1.0, 0.62, 0.01,
+                    format="%.2f", key="zc0")
+    zt0 = st.slider("$z_t$ temperature", 0.52, 0.70, 0.52, 0.01,
+                    format="%.2f", key="zt0")
+    base = st.session_state.get("base")
+    solved = base is not None and base["inputs"] == (zc0, zt0)
+    clicked = st.button("Solve", type="primary", use_container_width=True,
+                        disabled=solved)
+    if clicked:
+        with st.spinner("Solving with POUNCE..."):
+            try:
+                res = solve_baseline(zc0, zt0)
+            except Exception as e:
+                st.error(f"Solver error: {e}")
+                st.stop()
+        st.session_state["base"] = res
+        # A new baseline invalidates any existing comparison: the
+        # estimate was taken from the old factorization.
+        st.session_state.pop("cmp", None)
+        st.session_state["solve_status"] = res["status"]
+        st.rerun(scope="app")
+
 
 @st.fragment
 def _perturb_controls():
@@ -477,14 +489,13 @@ def _perturb_controls():
                      format="%.2f", key="zt0p")
     base = st.session_state.get("base")
     cmp_res = st.session_state.get("cmp")
-    stale = (base is None or base["K"] is None or base["inputs"]
-             != (st.session_state["zc0"], st.session_state["zt0"]))
-    cmp_current = (not stale and cmp_res is not None
+    no_factorization = base is None or base["K"] is None
+    cmp_current = (not no_factorization and cmp_res is not None
                    and cmp_res["pert_inputs"] == (zc0p, zt0p)
                    and cmp_res["base_inputs"] == base["inputs"])
     clicked = st.button("Estimate then Re-solve", type="primary",
                         use_container_width=True,
-                        disabled=stale or cmp_current)
+                        disabled=no_factorization or cmp_current)
     if clicked:
         with st.spinner("Estimating, then re-solving exactly..."):
             try:
@@ -505,6 +516,7 @@ def _perturb_controls():
 
 
 with st.sidebar:
+    _ic_controls()
     st.divider()
     _perturb_controls()
 
@@ -763,22 +775,8 @@ based on IPOPT," *Math. Program. Comput.*, vol. 4, pp. 307-331, 2012.
 
 
 # ── Main layout ──────────────────────────────────────────────────────────────
-# Button handlers first: each stores its result in session_state and reruns
-# so the page renders cleanly against the new state.
-
-if solve_btn:
-    with st.spinner("Solving with POUNCE..."):
-        try:
-            base = solve_baseline(zc0, zt0)
-        except Exception as e:
-            st.error(f"Solver error: {e}")
-            st.stop()
-    st.session_state["base"] = base
-    # A new baseline invalidates any existing comparison: the estimate was
-    # taken from the old factorization.
-    st.session_state.pop("cmp", None)
-    st.session_state["solve_status"] = base["status"]
-    st.rerun()
+# The button clicks are handled inside the sidebar fragments above; this
+# section renders the page against whatever they stored.
 
 if st.session_state.pop("expired", False):
     st.toast("The cached baseline solve expired: click Solve to recompute "
