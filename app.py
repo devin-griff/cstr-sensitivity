@@ -777,13 +777,12 @@ st.markdown(
 _caption_col, _ = st.columns([6, 3])
 with _caption_col:
     st.markdown(
-        "Solve the CSTR's optimal control problem from the initial state you "
-        "choose, and the local feedback gains fall out of the factorization "
-        "the solver is already holding: no extra solver run. Then pick a "
-        "perturbed start: **estimate()** predicts the entire re-optimized "
-        "solution in microseconds, and an exact re-solve shows how close the "
-        "prediction landed. **Demo** shows the results, **Formulation** "
-        "explains the model, and **Logs** keeps the session's event log."
+        "Solve the CSTR's optimal control problem from an initial "
+        "condition. Local feedback gains come automatically from "
+        "pyomo-pounce. Then, perturb the initial condition to see the "
+        "estimated trajectory as well as the resolved trajectory. "
+        "**Demo** shows the results, **Formulation** explains the model, "
+        "and **Logs** keeps the session's event log."
     )
 
 tab_demo, tab_form, tab_logs = st.tabs(["📈  Demo", "📐  Formulation",
