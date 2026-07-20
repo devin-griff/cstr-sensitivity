@@ -27,7 +27,8 @@
 #   2. Sidebar: initial-condition sliders + Solve, perturbed-start sliders
 #      + Estimate & Re-solve (shown once a baseline solve exists).
 #   3. build_model / solve_baseline / run_perturbation: the computation.
-#   4. Figure builders: schematic, time series, phase plane, comparison.
+#   4. Figure builders: time series, phase plane, comparison; the static
+#      schematic ships pre-rendered as schematic.png.
 #   5. render_formulation_tab: static markdown reference material.
 #   6. Main layout: three tabs (Demo, Formulation, Logs).
 # =============================================================================
@@ -47,7 +48,6 @@ import streamlit as st
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import Circle, FancyArrow, Rectangle
 import pyomo.environ as pyo
 from pyomo.dae import ContinuousSet, DerivativeVar
 from pyomo_cvp import declare_profile
@@ -477,46 +477,10 @@ def run_perturbation(base, zc0p, zt0p):
 
 # ── Figures ──────────────────────────────────────────────────────────────────
 
-def draw_schematic():
-    """Static CSTR schematic: jacketed stirred tank, feed, product, coolant."""
-    fig, ax = plt.subplots(figsize=(6.4, 4.4))
-
-    # jacket wraps the vessel sides and bottom
-    ax.add_patch(Rectangle((1.75, 0.75), 3.5, 2.5, fill=False, lw=1.2, ec="0.55"))
-    ax.add_patch(Rectangle((2.0, 1.0), 3.0, 2.6, fill=False, lw=2.0))
-    ax.plot([2.0, 5.0], [3.05, 3.05], lw=1.0, color="0.55")  # liquid level
-
-    # stirrer
-    ax.plot([3.5, 3.5], [3.85, 2.45], lw=2.0, color="k")
-    ax.plot([3.1, 3.9], [2.45, 2.45], lw=3.0, color="k")
-    ax.add_patch(Circle((3.5, 3.95), 0.16, fill=False, lw=1.5))
-
-    # feed in (above the jacket), product out
-    ax.add_patch(FancyArrow(0.7, 3.42, 1.15, 0.0, width=0.02,
-                            head_width=0.12, color="k"))
-    ax.text(0.45, 3.75, "feed  ($z_{t,f}$, residence time $v_2$)", fontsize=10)
-    ax.add_patch(FancyArrow(5.0, 1.4, 1.35, 0.0, width=0.02,
-                            head_width=0.12, color="k"))
-    ax.text(5.55, 1.62, "product", fontsize=10)
-
-    # coolant in at the jacket bottom, out at the jacket top
-    ax.add_patch(FancyArrow(0.8, 0.87, 0.8, 0.0, width=0.02,
-                            head_width=0.1, color="0.35"))
-    ax.text(0.45, 0.48, "coolant in  (flow $v_1$)", fontsize=10, color="0.35")
-    ax.add_patch(FancyArrow(5.25, 3.12, 0.8, 0.0, width=0.02,
-                            head_width=0.1, color="0.35"))
-    ax.text(5.55, 3.35, "coolant out", fontsize=10, color="0.35")
-
-    # contents
-    ax.text(3.5, 1.9, "A $\\rightarrow$ B  (exothermic)", ha="center", fontsize=11)
-    ax.text(3.5, 1.45, "states: $z_c$, $z_t$", ha="center", fontsize=10)
-
-    ax.set_xlim(0.2, 7.2)
-    ax.set_ylim(0.2, 4.5)
-    ax.set_aspect("equal")
-    ax.axis("off")
-    fig.tight_layout()
-    return fig
+def show_schematic():
+    """The static CSTR schematic, pre-rendered to schematic.png (the same
+    image the notebook embeds) so the app carries no drawing code."""
+    st.image(str(Path(__file__).parent / "schematic.png"), width="stretch")
 
 
 def build_timeseries(base):
@@ -650,7 +614,7 @@ unstable** steady state: without feedback the reactor drifts away from it,
 which is what makes the problem a control benchmark.
 """)
     with col_fig:
-        show(draw_schematic)
+        show_schematic()
 
     st.markdown("""
 <div style="font-size: 0.95rem; color: #495057; margin: 0.25rem 0 1.25rem 0;">
@@ -832,7 +796,7 @@ with tab_demo:
     if base is None:
         col_fig, col_text = st.columns([5, 4])
         with col_fig:
-            show(draw_schematic)
+            show_schematic()
         with col_text:
             st.info("Set the initial condition in the sidebar and click "
                     "**Solve**.")
@@ -899,7 +863,7 @@ with tab_demo:
                     f"{base['gain_s'] * 1e6:.0f} µs."
                 )
         with col_schem:
-            show(draw_schematic)
+            show_schematic()
 
         st.divider()
         st.markdown("#### Perturbed start: estimate versus re-solve")

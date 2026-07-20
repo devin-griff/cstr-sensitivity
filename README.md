@@ -23,6 +23,7 @@ auto-stop machines. Custom domain wired through Cloudflare DNS.
 ## Files
 
 - `app.py`: Streamlit UI and computation
+- `schematic.png`: the CSTR schematic shown in the app and the notebook
 - `requirements.txt`: Python deps
 - `favicon.png`: Griffith PSE blackletter G favicon
 - `Dockerfile`, `fly.toml`, `.dockerignore`: Fly.io production image config
