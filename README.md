@@ -1,6 +1,6 @@
 # CSTR Sensitivity
 
-NMPC feedback gains from one solve: parametric sensitivity on a CSTR
+Local feedback gains from one solve: parametric sensitivity on a CSTR
 
 **Live demo:** https://cstr-sensitivity.griffith-pse.com  
 **Home:** https://griffith-pse.com
