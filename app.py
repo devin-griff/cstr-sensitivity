@@ -127,20 +127,15 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-_HINT = ('<span style="color: rgba(49, 51, 63, 0.6); font-size: 0.875rem; '
-         'font-weight: 400;">{}</span>')
-
 # Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
 # no upper variable bound and the Arrhenius term is singular at zt = 0,
 # so the slider floor is the coolant temperature (nothing colder is
 # reachable) with a hot-side cap above the operating region. Every corner
 # solves to optimality.
-st.sidebar.markdown("## Initial Condition &nbsp; "
-                    + _HINT.format("reactor state at t = 0"),
-                    unsafe_allow_html=True)
-zc0 = st.sidebar.slider("$z_c(0)$ concentration", 0.0, 1.0, 0.62, 0.01,
+st.sidebar.markdown("## Initial Condition")
+zc0 = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.62, 0.01,
                         format="%.2f", key="zc0")
-zt0 = st.sidebar.slider("$z_t(0)$ temperature", 0.38, 0.70, 0.52, 0.01,
+zt0 = st.sidebar.slider("$z_t$ temperature", 0.38, 0.70, 0.52, 0.01,
                         format="%.2f", key="zt0")
 
 # The Solve button greys out when the cached baseline already reflects the
@@ -158,12 +153,10 @@ solve_btn = st.sidebar.button("Solve", type="primary",
 est_btn = False
 if base is not None and base["K"] is not None:
     st.sidebar.divider()
-    st.sidebar.markdown("## Perturbed Start &nbsp; "
-                        + _HINT.format("where the plant actually is"),
-                        unsafe_allow_html=True)
-    zc0p = st.sidebar.slider("$z_c(0)$ concentration", 0.0, 1.0, 0.61,
+    st.sidebar.markdown("## Perturbed Start")
+    zc0p = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.61,
                              0.01, format="%.2f", key="zc0p")
-    zt0p = st.sidebar.slider("$z_t(0)$ temperature", 0.38, 0.70, 0.54,
+    zt0p = st.sidebar.slider("$z_t$ temperature", 0.38, 0.70, 0.54,
                              0.01, format="%.2f", key="zt0p")
     cmp_res = st.session_state.get("cmp")
     cmp_current = (cmp_res is not None
