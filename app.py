@@ -1,9 +1,9 @@
 # =============================================================================
 # CSTR Sensitivity: a Streamlit tutorial app.
 #
-# NMPC feedback gains from one solve. The app solves an optimal control
+# Local feedback gains from one solve. The app solves an optimal control
 # problem for the Hicks-Ray CSTR from a user-chosen initial state, then reads
-# the NMPC gain matrix out of the KKT factorization the solver is already
+# the local gain matrix out of the KKT factorization the solver is already
 # holding: each gain is one backsolve, no extra solver run. From the same
 # factorization, estimate() predicts the entire re-optimized solution at a
 # perturbed initial state in microseconds; an exact re-solve (on a clone, so
@@ -332,23 +332,23 @@ def _worker():
     return w
 
 
-class _ThreadCapture(io.TextIOBase):
-    """Capture stdout writes from the current thread only; everything
-    else passes through. contextlib.redirect_stdout swaps stdout for the
-    whole process, so with it a concurrent script thread's output (say, a
-    rich-colorized traceback from Streamlit's exception logger) lands
-    inside a captured solver log."""
+class _SolveLogCapture(io.TextIOBase):
+    """Capture stdout during a worker-thread solve. pounce tees the
+    engine's fd-level output to sys.stdout through a tail thread of its
+    own, so the capture cannot key on the worker thread alone: it takes
+    writes from every thread EXCEPT Streamlit script threads, whose
+    output (say, a rich-colorized traceback from the exception logger)
+    belongs on the terminal, not inside a solver log."""
 
     def __init__(self, real):
-        self.thread = threading.current_thread()
         self.real = real
         self.buf = io.StringIO()
 
     def write(self, s):
-        if threading.current_thread() is self.thread:
-            self.buf.write(s)
-        else:
+        if threading.current_thread().name.startswith("ScriptRunner"):
             self.real.write(s)
+        else:
+            self.buf.write(s)
         return len(s)
 
     def flush(self):
@@ -357,7 +357,7 @@ class _ThreadCapture(io.TextIOBase):
 
 @contextlib.contextmanager
 def _capture_stdout():
-    cap = _ThreadCapture(sys.stdout)
+    cap = _SolveLogCapture(sys.stdout)
     sys.stdout = cap
     try:
         yield cap.buf
@@ -652,7 +652,7 @@ The solver that just found the optimum is still holding the KKT
 factorization from its last iteration. sIPOPT-style parametric sensitivity
 [4] reads two things out of it without any further solver run:
 
-- **The NMPC gain matrix.** Each entry of
+- **The local gain matrix.** Each entry of
   $K = \partial (v_{1,0},\, v_{2,0}) \, / \, \partial (z_{c0},\, z_{t0})$
   is one backsolve: the derivative of a first control move with respect to
   one component of the initial state. This is the local feedback law
@@ -747,7 +747,7 @@ if _status is not None and _status != "optimal":
 st.markdown(
     "<h2 style='margin: 0 0 0.25rem 0; padding: 0; font-size: 1.5rem; "
     "font-weight: 700;'>"
-    "CSTR Sensitivity: NMPC Feedback from One Solve "
+    "CSTR Sensitivity: Local Feedback from One Solve "
     "<a href='https://github.com/devin-griff/cstr-sensitivity' target='_blank' "
     "title='View source on GitHub' "
     "style='display: inline-block; vertical-align: 0.02em; "
@@ -778,7 +778,7 @@ _caption_col, _ = st.columns([6, 3])
 with _caption_col:
     st.markdown(
         "Solve the CSTR's optimal control problem from the initial state you "
-        "choose, and the NMPC feedback gains fall out of the factorization "
+        "choose, and the local feedback gains fall out of the factorization "
         "the solver is already holding: no extra solver run. Then pick a "
         "perturbed start: **estimate()** predicts the entire re-optimized "
         "solution in microseconds, and an exact re-solve shows how close the "
@@ -802,7 +802,7 @@ with tab_demo:
                     "**Solve**.")
             st.markdown(
                 "1. **Solve** computes the optimal trajectories back to the "
-                "reactor's unstable steady state, and the NMPC gain matrix "
+                "reactor's unstable steady state, and the local gain matrix "
                 "appears with them: read straight from the solver's held "
                 "factorization, no extra run.\n"
                 "2. A **Perturbed Start** section then opens in the sidebar: "
@@ -822,7 +822,7 @@ with tab_demo:
 
         col_gain, col_schem = st.columns([5, 4])
         with col_gain:
-            st.markdown("#### NMPC feedback gains")
+            st.markdown("#### Local feedback gains")
             if base["K"] is None:
                 st.warning("The solve did not reach an optimal point, so "
                            "no factorization was retained to read the "
