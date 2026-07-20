@@ -496,19 +496,18 @@ def _perturb_controls():
                         use_container_width=True,
                         disabled=no_factorization or cmp_current)
     if clicked:
-        with st.spinner("Estimating, then re-solving exactly..."):
-            try:
-                res = run_perturbation(base, zc0p, zt0p)
-            except LookupError:
-                # The stored baseline was evicted from the worker's
-                # cache: drop the stale results and ask for a fresh solve.
-                st.session_state.pop("base", None)
-                st.session_state.pop("cmp", None)
-                st.session_state["expired"] = True
-                st.rerun(scope="app")
-            except Exception as e:
-                st.error(f"Solver error: {e}")
-                st.stop()
+        try:
+            res = run_perturbation(base, zc0p, zt0p)
+        except LookupError:
+            # The stored baseline was evicted from the worker's cache:
+            # drop the stale results and ask for a fresh solve.
+            st.session_state.pop("base", None)
+            st.session_state.pop("cmp", None)
+            st.session_state["expired"] = True
+            st.rerun(scope="app")
+        except Exception as e:
+            st.error(f"Solver error: {e}")
+            st.stop()
         st.session_state["cmp"] = res
         st.session_state["solve_status"] = res["status"]
         st.rerun(scope="app")
