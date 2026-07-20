@@ -130,13 +130,18 @@ st.sidebar.markdown(
 _HINT = ('<span style="color: rgba(49, 51, 63, 0.6); font-size: 0.875rem; '
          'font-weight: 400;">{}</span>')
 
+# Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
+# no upper variable bound and the Arrhenius term is singular at zt = 0,
+# so the slider floor is the coolant temperature (nothing colder is
+# reachable) with a hot-side cap above the operating region. Every corner
+# solves to optimality.
 st.sidebar.markdown("## Initial Condition &nbsp; "
                     + _HINT.format("reactor state at t = 0"),
                     unsafe_allow_html=True)
-zc0 = st.sidebar.slider("$z_c(0)$ concentration", 0.50, 0.80, 0.625, 0.005,
-                        format="%.3f", key="zc0")
-zt0 = st.sidebar.slider("$z_t(0)$ temperature", 0.45, 0.62, 0.525, 0.005,
-                        format="%.3f", key="zt0")
+zc0 = st.sidebar.slider("$z_c(0)$ concentration", 0.0, 1.0, 0.62, 0.01,
+                        format="%.2f", key="zc0")
+zt0 = st.sidebar.slider("$z_t(0)$ temperature", 0.38, 0.70, 0.52, 0.01,
+                        format="%.2f", key="zt0")
 
 # The Solve button greys out when the cached baseline already reflects the
 # current sliders; the perturbation button below is then the live action.
@@ -156,10 +161,10 @@ if base is not None and base["K"] is not None:
     st.sidebar.markdown("## Perturbed Start &nbsp; "
                         + _HINT.format("where the plant actually is"),
                         unsafe_allow_html=True)
-    zc0p = st.sidebar.slider("$z_c(0)$ concentration", 0.50, 0.80, 0.610,
-                             0.005, format="%.3f", key="zc0p")
-    zt0p = st.sidebar.slider("$z_t(0)$ temperature", 0.45, 0.62, 0.540,
-                             0.005, format="%.3f", key="zt0p")
+    zc0p = st.sidebar.slider("$z_c(0)$ concentration", 0.0, 1.0, 0.61,
+                             0.01, format="%.2f", key="zc0p")
+    zt0p = st.sidebar.slider("$z_t(0)$ temperature", 0.38, 0.70, 0.54,
+                             0.01, format="%.2f", key="zt0p")
     cmp_res = st.session_state.get("cmp")
     cmp_current = (cmp_res is not None
                    and cmp_res["pert_inputs"] == (zc0p, zt0p)
@@ -422,7 +427,7 @@ def solve_baseline(zc0, zt0):
     """Solve on the worker thread, then record the events. The returned
     dict holds plain data plus the worker's token for the stored model."""
     res = _worker().call(_solve_job, zc0, zt0)
-    log_event(f"solve from zc(0) = {zc0:.3f}, zt(0) = {zt0:.3f}: "
+    log_event(f"solve from zc(0) = {zc0:.2f}, zt(0) = {zt0:.2f}: "
               f"{res['status']} in {res['solve_s']:.2f} s", res.pop("log"))
     if res["K"] is not None:
         log_event(f"gain matrix: 4 backsolves against the held "
@@ -434,10 +439,10 @@ def run_perturbation(base, zc0p, zt0p):
     """Estimate and re-solve on the worker thread, then record the events.
     Raises LookupError when the stored baseline has been evicted."""
     res = _worker().call(_perturb_job, base["token"], zc0p, zt0p)
-    log_event(f"estimate at zc(0) = {zc0p:.3f}, zt(0) = {zt0p:.3f}: "
+    log_event(f"estimate at zc(0) = {zc0p:.2f}, zt(0) = {zt0p:.2f}: "
               f"full-solution prediction in {res['est_s'] * 1e6:.0f} "
               f"microseconds, no solver run")
-    log_event(f"re-solve from zc(0) = {zc0p:.3f}, zt(0) = {zt0p:.3f}: "
+    log_event(f"re-solve from zc(0) = {zc0p:.2f}, zt(0) = {zt0p:.2f}: "
               f"{res['status']} in {res['resolve_s']:.2f} s", res.pop("log"))
     res["base_inputs"] = base["inputs"]
     return res
@@ -886,7 +891,7 @@ with tab_demo:
             speedup = cmp_res["resolve_s"] / max(cmp_res["est_s"], 1e-9)
             st.markdown(
                 f"From the perturbed start "
-                f"$z_c(0) = {zc0p_r:.3f}$, $z_t(0) = {zt0p_r:.3f}$: the "
+                f"$z_c(0) = {zc0p_r:.2f}$, $z_t(0) = {zt0p_r:.2f}$: the "
                 f"first-order prediction from the baseline factorization "
                 f"(dashed) against the exact re-solve (solid)."
             )
