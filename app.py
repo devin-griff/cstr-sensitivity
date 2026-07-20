@@ -521,10 +521,12 @@ with st.sidebar:
 
 # ── Figures ──────────────────────────────────────────────────────────────────
 
-def show_schematic():
+def show_schematic(width="stretch"):
     """The static CSTR schematic, pre-rendered to schematic.png (the same
-    image the notebook embeds) so the app carries no drawing code."""
-    st.image(str(Path(__file__).parent / "schematic.png"), width="stretch")
+    image the notebook embeds) so the app carries no drawing code. The
+    header call passes a pixel width sized to the caption's height so the
+    image does not push the tabs down."""
+    st.image(str(Path(__file__).parent / "schematic.png"), width=width)
 
 
 def build_gain_chart(base):
@@ -828,7 +830,7 @@ with _caption_col:
         "and **Logs** keeps the session's event log."
     )
 with _schem_col:
-    show_schematic()
+    show_schematic(width=200)
 
 tab_demo, tab_form, tab_logs = st.tabs(["📈  Demo", "📐  Formulation",
                                         "📋  Logs"])
