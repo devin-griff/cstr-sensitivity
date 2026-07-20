@@ -233,22 +233,7 @@ def build_model(zc0, zt0):
         m, wrt=m.t, nfe=N, ncp=3, scheme="LAGRANGE-RADAU")
     pyo.TransformationFactory("cvp.parameterize").apply_to(m)
     declare_sens_param(m.zc0, m.zt0)
-    _warm_start(m, zc0, zt0)
     return m
-
-
-def _warm_start(m, zc0, zt0):
-    """Warm start: states linearly interpolated from the initial condition
-    to the steady state across the horizon, derivatives at the slope. A
-    flat all-at-steady-state guess conflicts with a far initial condition
-    and can drag the solve onto a poor point."""
-    T = N * H
-    for t in m.t:
-        f = t / T
-        m.zc[t] = zc0 + f * (ZC_SS - zc0)
-        m.zt[t] = zt0 + f * (ZT_SS - zt0)
-        m.dzc[t] = (ZC_SS - zc0) / T
-        m.dzt[t] = (ZT_SS - zt0) / T
 
 
 def extract(m, ts):
