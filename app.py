@@ -483,6 +483,37 @@ def show_schematic():
     st.image(str(Path(__file__).parent / "schematic.png"), width="stretch")
 
 
+def build_gain_chart(base):
+    """The four local gains as sign-colored bars: green above the axis
+    for a positive gain, red below it for a negative one."""
+    K = base["K"]
+    vals = [K[0][0], K[0][1], K[1][0], K[1][1]]
+    labels = [r"$\partial v_1 / \partial z_c$",
+              r"$\partial v_1 / \partial z_t$",
+              r"$\partial v_2 / \partial z_c$",
+              r"$\partial v_2 / \partial z_t$"]
+    colors = ["#009E73" if v >= 0 else "#CC3311" for v in vals]
+    fig, ax = plt.subplots(figsize=(5.6, 3.4))
+    ax.bar(range(4), vals, color=colors, width=0.55)
+    ax.axhline(0, color="k", lw=1)
+    for k, v in enumerate(vals):
+        ax.annotate(f"{v:.2f}", (k, v),
+                    xytext=(0, 5 if v >= 0 else -5),
+                    textcoords="offset points", ha="center",
+                    va="bottom" if v >= 0 else "top", fontsize=9)
+    ax.set_xticks(range(4))
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("gain")
+    lo = min(vals + [0.0])
+    hi = max(vals + [0.0])
+    pad = 0.15 * (hi - lo if hi > lo else 1.0)
+    ax.set_ylim(lo - pad, hi + pad)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    fig.tight_layout()
+    return fig
+
+
 def build_timeseries(base):
     """Baseline optimal trajectories: states over controls, targets dashed."""
     ts, traj = base["ts"], base["traj"]
@@ -832,30 +863,7 @@ with tab_demo:
                     "the initial state: the local feedback law around the "
                     "solved trajectory."
                 )
-                K = base["K"]
-                st.markdown(f"""
-<table style="border-collapse: collapse; font-size: 0.95rem; margin: 0.25rem 0 0.5rem 0;">
-  <thead>
-    <tr style="border-bottom: 1px solid #dee2e6;">
-      <th style="padding: 0.4rem 0.9rem;"></th>
-      <th style="padding: 0.4rem 0.9rem; text-align: right;">∂ / ∂ z<sub>c</sub>(0)</th>
-      <th style="padding: 0.4rem 0.9rem; text-align: right;">∂ / ∂ z<sub>t</sub>(0)</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 0.3rem 0.9rem;">v<sub>1</sub>[0] &nbsp;coolant flow</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{K[0][0]:.4f}</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{K[0][1]:.4f}</td>
-    </tr>
-    <tr>
-      <td style="padding: 0.3rem 0.9rem;">v<sub>2</sub>[0] &nbsp;residence time</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{K[1][0]:.4f}</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{K[1][1]:.4f}</td>
-    </tr>
-  </tbody>
-</table>
-""", unsafe_allow_html=True)
+                show(build_gain_chart, base)
                 st.caption(
                     f"Solve: {base['solve_s']:.2f} s. Gain matrix: 4 "
                     f"backsolves against the held factorization, "
