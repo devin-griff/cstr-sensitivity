@@ -128,14 +128,16 @@ st.sidebar.markdown(
 )
 
 # Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
-# no upper variable bound and the Arrhenius term is singular at zt = 0,
-# so the slider floor is the coolant temperature (nothing colder is
-# reachable) with a hot-side cap above the operating region. Every corner
-# solves to optimality.
+# no upper variable bound, so the cap sits above the operating region.
+# The floor 0.52 is the coldest start from which the trajectory still
+# settles at the steady state within the horizon for every zc(0): below
+# it the Arrhenius term is essentially frozen, the coolant can only
+# remove heat, and ignition takes longer than the horizon (the empty
+# reactor zc(0) = 0 is the binding case, failing up through 0.51).
 st.sidebar.markdown("## Initial Condition")
 zc0 = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.62, 0.01,
                         format="%.2f", key="zc0")
-zt0 = st.sidebar.slider("$z_t$ temperature", 0.38, 0.70, 0.52, 0.01,
+zt0 = st.sidebar.slider("$z_t$ temperature", 0.52, 0.70, 0.52, 0.01,
                         format="%.2f", key="zt0")
 
 # The Solve button greys out when the cached baseline already reflects the
@@ -156,7 +158,7 @@ if base is not None and base["K"] is not None:
     st.sidebar.markdown("## Perturbed Start")
     zc0p = st.sidebar.slider("$z_c$ concentration", 0.0, 1.0, 0.61,
                              0.01, format="%.2f", key="zc0p")
-    zt0p = st.sidebar.slider("$z_t$ temperature", 0.38, 0.70, 0.54,
+    zt0p = st.sidebar.slider("$z_t$ temperature", 0.52, 0.70, 0.54,
                              0.01, format="%.2f", key="zt0p")
     cmp_res = st.session_state.get("cmp")
     cmp_current = (cmp_res is not None
