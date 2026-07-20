@@ -576,11 +576,21 @@ def build_comparison(base, cmp_res):
     return fig
 
 
-def show(fig):
-    # No explicit width argument: the default stretches to the container,
-    # and passing the legacy use_container_width= is deprecated.
-    st.pyplot(fig)
-    plt.close(fig)
+# matplotlib's shared state (the mathtext parser especially) is not
+# thread-safe, and Streamlit can interrupt a rerun mid-render while the
+# next script thread draws: without a lock, concurrent "$z_c$" label
+# parses corrupt each other and raise ParseException. One lock covers
+# figure building and rendering together.
+_MPL_LOCK = threading.RLock()
+
+
+def show(builder, *args):
+    # No explicit width argument on st.pyplot: the default stretches to
+    # the container, and the legacy use_container_width= is deprecated.
+    with _MPL_LOCK:
+        fig = builder(*args)
+        st.pyplot(fig)
+        plt.close(fig)
 
 
 # ── Formulation tab ──────────────────────────────────────────────────────────
@@ -608,7 +618,7 @@ unstable** steady state: without feedback the reactor drifts away from it,
 which is what makes the problem a control benchmark.
 """)
     with col_fig:
-        show(draw_schematic())
+        show(draw_schematic)
 
     st.markdown("""
 <div style="font-size: 0.95rem; color: #495057; margin: 0.25rem 0 1.25rem 0;">
@@ -790,7 +800,7 @@ with tab_demo:
     if base is None:
         col_fig, col_text = st.columns([5, 4])
         with col_fig:
-            show(draw_schematic())
+            show(draw_schematic)
         with col_text:
             st.info("Set the initial condition in the sidebar and click "
                     "**Solve**.")
@@ -809,10 +819,10 @@ with tab_demo:
         col_ts, col_ph = st.columns([11, 9])
         with col_ts:
             st.markdown("#### Optimal trajectories")
-            show(build_timeseries(base))
+            show(build_timeseries, base)
         with col_ph:
             st.markdown("#### Phase plane")
-            show(build_phase(base))
+            show(build_phase, base)
 
         col_gain, col_schem = st.columns([5, 4])
         with col_gain:
@@ -857,7 +867,7 @@ with tab_demo:
                     f"{base['gain_s'] * 1e6:.0f} µs."
                 )
         with col_schem:
-            show(draw_schematic())
+            show(draw_schematic)
 
         st.divider()
         st.markdown("#### Perturbed start: estimate versus re-solve")
@@ -908,7 +918,7 @@ with tab_demo:
                 f"run. Re-solve: {cmp_res['resolve_s'] * 1e3:.0f} ms "
                 f"({speedup:,.0f}x more)."
             )
-            show(build_comparison(base, cmp_res))
+            show(build_comparison, base, cmp_res)
 
 with tab_form:
     render_formulation_tab()
