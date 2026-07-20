@@ -521,12 +521,11 @@ with st.sidebar:
 
 # ── Figures ──────────────────────────────────────────────────────────────────
 
-def show_schematic(width="stretch"):
+def show_schematic():
     """The static CSTR schematic, pre-rendered to schematic.png (the same
-    image the notebook embeds) so the app carries no drawing code. The
-    header call passes a pixel width sized to the caption's height so the
-    image does not push the tabs down."""
-    st.image(str(Path(__file__).parent / "schematic.png"), width=width)
+    image the notebook embeds) so the app carries no drawing code. Shown
+    only on the Formulation tab."""
+    st.image(str(Path(__file__).parent / "schematic.png"), width="stretch")
 
 
 def build_gain_chart(base):
@@ -819,7 +818,7 @@ st.markdown(
     "</h2>",
     unsafe_allow_html=True,
 )
-_caption_col, _schem_col = st.columns([6, 3])
+_caption_col, _ = st.columns([6, 3])
 with _caption_col:
     st.markdown(
         "Solve the CSTR's optimal control problem from an initial "
@@ -829,8 +828,6 @@ with _caption_col:
         "**Demo** shows the results, **Formulation** explains the model, "
         "and **Logs** keeps the session's event log."
     )
-with _schem_col:
-    show_schematic(width=200)
 
 tab_demo, tab_form, tab_logs = st.tabs(["📈  Demo", "📐  Formulation",
                                         "📋  Logs"])
