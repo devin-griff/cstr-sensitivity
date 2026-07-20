@@ -38,6 +38,7 @@ import contextlib
 import gc
 import io
 import queue
+import sys
 import threading
 import time
 from pathlib import Path
@@ -331,15 +332,47 @@ def _worker():
     return w
 
 
+class _ThreadCapture(io.TextIOBase):
+    """Capture stdout writes from the current thread only; everything
+    else passes through. contextlib.redirect_stdout swaps stdout for the
+    whole process, so with it a concurrent script thread's output (say, a
+    rich-colorized traceback from Streamlit's exception logger) lands
+    inside a captured solver log."""
+
+    def __init__(self, real):
+        self.thread = threading.current_thread()
+        self.real = real
+        self.buf = io.StringIO()
+
+    def write(self, s):
+        if threading.current_thread() is self.thread:
+            self.buf.write(s)
+        else:
+            self.real.write(s)
+        return len(s)
+
+    def flush(self):
+        self.real.flush()
+
+
+@contextlib.contextmanager
+def _capture_stdout():
+    cap = _ThreadCapture(sys.stdout)
+    sys.stdout = cap
+    try:
+        yield cap.buf
+    finally:
+        sys.stdout = cap.real
+
+
 def _solve_job(w, zc0, zt0):
     """Worker-thread job: build and solve the OCP, then read the gain
     matrix out of the held factorization: the first control move
     differentiated with respect to the initial state, one backsolve per
     entry, no extra solve."""
     m = build_model(zc0, zt0)
-    buf = io.StringIO()
     t0 = time.perf_counter()
-    with contextlib.redirect_stdout(buf):
+    with _capture_stdout() as buf:
         result = pyo.SolverFactory("pounce").solve(m, tee=True)
     solve_s = time.perf_counter() - t0
     status = str(result.solver.termination_condition)
@@ -392,9 +425,8 @@ def _perturb_job(w, token, zc0p, zt0p):
     m2 = m.clone()
     m2.zc0 = zc0p
     m2.zt0 = zt0p
-    buf = io.StringIO()
     t0 = time.perf_counter()
-    with contextlib.redirect_stdout(buf):
+    with _capture_stdout() as buf:
         result = pyo.SolverFactory("pounce").solve(m2, tee=True)
     resolve_s = time.perf_counter() - t0
 
