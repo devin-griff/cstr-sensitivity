@@ -502,7 +502,7 @@ def _ic_controls():
 @st.fragment
 def _perturb_controls():
     st.markdown("## Perturbed Start")
-    zc0p = st.slider("$z_c$ concentration", 0.0, 1.0, 0.05, 0.01,
+    zc0p = st.slider("$z_c$ concentration", 0.0, 1.0, 0.01, 0.01,
                      format="%.2f", key="zc0p")
     zt0p = st.slider("$z_t$ temperature", 0.52, 0.70, 0.53, 0.01,
                      format="%.2f", key="zt0p")
