@@ -532,30 +532,34 @@ def build_gain_chart(base):
     sidebar: green rightward for a positive gain, red leftward for a
     negative one, the value at each bar tip. Horizontal because at
     sidebar width the four partial-derivative labels only fit as y-tick
-    rows."""
-    K = base["K"]
-    vals = [K[0][0], K[0][1], K[1][0], K[1][1]]
+    rows. With no factorization (base None) the same frame renders with
+    no bars, so the sidebar layout is identical before the first solve."""
     labels = [r"$\partial v_1 / \partial z_c$",
               r"$\partial v_1 / \partial z_t$",
               r"$\partial v_2 / \partial z_c$",
               r"$\partial v_2 / \partial z_t$"]
-    colors = ["#009E73" if v >= 0 else "#CC3311" for v in vals]
     fig, ax = plt.subplots(figsize=(3.2, 1.9))
-    ax.barh(range(4), vals, color=colors, height=0.55)
+    if base is not None:
+        K = base["K"]
+        vals = [K[0][0], K[0][1], K[1][0], K[1][1]]
+        colors = ["#009E73" if v >= 0 else "#CC3311" for v in vals]
+        ax.barh(range(4), vals, color=colors, height=0.55)
+        for k, v in enumerate(vals):
+            ax.annotate(f"{v:.2f}", (v, k),
+                        xytext=(4 if v >= 0 else -4, 0),
+                        textcoords="offset points", va="center",
+                        ha="left" if v >= 0 else "right", fontsize=8)
+        lo = min(vals + [0.0])
+        hi = max(vals + [0.0])
+        pad = 0.18 * (hi - lo if hi > lo else 1.0)
+        ax.set_xlim(lo - pad, hi + pad)
+    else:
+        ax.set_xlim(-1.0, 1.0)
     ax.axvline(0, color="k", lw=1)
-    for k, v in enumerate(vals):
-        ax.annotate(f"{v:.2f}", (v, k),
-                    xytext=(4 if v >= 0 else -4, 0),
-                    textcoords="offset points", va="center",
-                    ha="left" if v >= 0 else "right", fontsize=8)
     ax.set_yticks(range(4))
     ax.set_yticklabels(labels, fontsize=9)
     ax.invert_yaxis()  # matrix row order, top to bottom
     ax.tick_params(axis="x", labelsize=8)
-    lo = min(vals + [0.0])
-    hi = max(vals + [0.0])
-    pad = 0.18 * (hi - lo if hi > lo else 1.0)
-    ax.set_xlim(lo - pad, hi + pad)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     fig.tight_layout()
@@ -712,15 +716,16 @@ def show(builder, *args):
 # ── Sidebar assembly ─────────────────────────────────────────────────────────
 # The gains section sits between the two control fragments and outside
 # both: it refreshes exactly when a Solve completes (a full-app rerun),
-# and slider drags never touch it. Absent until an optimal solve holds a
-# factorization.
+# and slider drags never touch it. Before an optimal solve holds a
+# factorization the chart renders as an empty frame, so the sidebar
+# layout never shifts.
 
 with st.sidebar:
     _ic_controls()
+    st.markdown("## Local Feedback Gains")
     _base = st.session_state.get("base")
-    if _base is not None and _base["K"] is not None:
-        st.markdown("## Local Feedback Gains")
-        show(build_gain_chart, _base)
+    show(build_gain_chart,
+         _base if (_base is not None and _base["K"] is not None) else None)
     _perturb_controls()
 
 
