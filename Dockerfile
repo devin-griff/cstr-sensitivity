@@ -32,8 +32,9 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# App source + favicon (referenced by st.set_page_config(page_icon=...)).
-COPY app.py favicon.png ./
+# App source + favicon (referenced by st.set_page_config(page_icon=...))
+# + the pre-rendered schematic the Formulation tab displays.
+COPY app.py favicon.png schematic.png ./
 
 # Overwrite Streamlit's default static index.html: title, favicon, and
 # inject Open Graph + Twitter Card meta tags so links to *.griffith-pse.com
