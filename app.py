@@ -719,12 +719,8 @@ with st.sidebar:
     _ic_controls()
     _base = st.session_state.get("base")
     if _base is not None and _base["K"] is not None:
-        st.divider()
         st.markdown("## Local Feedback Gains")
         show(build_gain_chart, _base)
-        st.caption(f"4 backsolves against the held factorization, "
-                   f"{_base['gain_s'] * 1e6:.0f} µs.")
-    st.divider()
     _perturb_controls()
 
 
