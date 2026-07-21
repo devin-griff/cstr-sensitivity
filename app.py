@@ -136,7 +136,12 @@ _FAVICON_DATA_URL = "data:image/png;base64," + base64.b64encode(
 ).decode()
 st.sidebar.markdown(
     f'<a class="home-logo-corner" href="https://griffith-pse.com" target="_self">'
-    f'<img src="{_FAVICON_DATA_URL}" alt="Griffith PSE: home" />'
+    f'<img src="{_FAVICON_DATA_URL}" alt="Griffith PSE: home" '
+    # Size on the tag itself, not only in the injected stylesheet: the
+    # 512px source otherwise paints full-size for a frame when the image
+    # decodes before Streamlit mounts the custom CSS (cold-load flash).
+    f'width="32" height="32" '
+    f'style="width:32px;height:32px;border-radius:4px;display:block" />'
     f'</a>',
     unsafe_allow_html=True,
 )
