@@ -582,6 +582,17 @@ def build_gain_chart(base):
     return fig
 
 
+def _foreground(*axes):
+    """Draw the data above the axes frame. Spines render at a higher
+    z-order than lines, so a trajectory sitting exactly on a bound of the
+    fixed [0, 1] canvas would otherwise hide under the frame; unclipping
+    keeps its full line width visible at the edge."""
+    for ax in axes:
+        for artist in ax.lines:
+            artist.set_zorder(3)
+            artist.set_clip_on(False)
+
+
 def build_timeseries(base):
     """Baseline optimal trajectories: states over controls, targets
     dashed. All axes fixed to [0, 1]: every plotted quantity lives
@@ -605,6 +616,7 @@ def build_timeseries(base):
     ax_v.legend(loc="lower right")
     ax_z.set_ylim(0.0, 1.0)
     ax_v.set_ylim(0.0, 1.0)
+    _foreground(ax_z, ax_v)
     fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
@@ -624,6 +636,7 @@ def build_phase(base):
     ax.legend()
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
+    _foreground(ax)
     fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
 
@@ -657,6 +670,7 @@ def build_comparison_timeseries(base, cmp_res):
     ax_v.legend(loc="lower right", fontsize=8)
     ax_z.set_ylim(0.0, 1.0)
     ax_v.set_ylim(0.0, 1.0)
+    _foreground(ax_z, ax_v)
     fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
@@ -679,6 +693,7 @@ def build_phase_pert(base, cmp_res):
     ax.legend()
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
+    _foreground(ax)
     fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
 
