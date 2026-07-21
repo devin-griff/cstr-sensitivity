@@ -108,6 +108,15 @@ section[data-testid="stSidebar"] .stButton > button:disabled:hover {
 section[data-testid="stSidebar"] [data-testid="stSlider"] {
     margin-bottom: -0.25rem !important;
 }
+/* The gains chart: st.pyplot stretches images to the sidebar width, so
+   dragging the sidebar wider would grow the chart past its fixed
+   190px box and clip it. Cap the height instead (width follows the
+   aspect ratio); a narrow sidebar binds on max-width and scales down. */
+section[data-testid="stSidebar"] [data-testid="stImage"] img {
+    max-height: 182px;
+    max-width: 100%;
+    width: auto !important;
+}
 [data-testid="stMainBlockContainer"] {
     padding-top: 2.5rem !important;
     padding-bottom: 0rem !important;
