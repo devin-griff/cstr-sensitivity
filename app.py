@@ -147,8 +147,7 @@ st.sidebar.markdown(
 def build_model(zc0, zt0):
     """The Hicks-Ray CSTR optimal control problem, discretized and
     control-parameterized, with the initial condition declared as the
-    sensitivity parameters. Identical to the companion notebook, except
-    the horizon runs N = 100 here versus the notebook's 50."""
+    sensitivity parameters. Identical to the companion notebook."""
     m = pyo.ConcreteModel()
     m.t = ContinuousSet(initialize=pyo.RangeSet(0, N * H, H))
 
@@ -845,6 +844,7 @@ for the full implementation this app is built from.
 
 [1] G. A. Hicks and W. H. Ray, "Approximation methods for optimal control
 synthesis," *Can. J. Chem. Eng.*, vol. 49, pp. 522-528, 1971.
+[DOI](https://doi.org/10.1002/cjce.5450490416)
 
 [2] R. Huang, S. C. Patwardhan, and L. T. Biegler, "Robust stability of
 nonlinear model predictive control based on extended Kalman filter,"
@@ -854,9 +854,11 @@ nonlinear model predictive control based on extended Kalman filter,"
 [3] V. M. Zavala and L. T. Biegler, "The advanced-step NMPC controller:
 optimality, stability and robustness," *Automatica*, vol. 45, pp. 86-93,
 2009.
+[DOI](https://doi.org/10.1016/j.automatica.2008.06.011)
 
 [4] H. Pirnay, R. Lopez-Negrete, and L. T. Biegler, "Optimal sensitivity
 based on IPOPT," *Math. Program. Comput.*, vol. 4, pp. 307-331, 2012.
+[DOI](https://doi.org/10.1007/s12532-012-0043-2)
 """)
 
 
