@@ -626,7 +626,7 @@ def build_timeseries(base):
     ax_z.set_ylim(0.0, 1.0)
     ax_v.set_ylim(0.0, 1.0)
     _foreground(ax_z, ax_v)
-    fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
+    fig.subplots_adjust(left=0.078, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
@@ -646,7 +646,7 @@ def build_phase(base):
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
     _foreground(ax)
-    fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
+    fig.subplots_adjust(left=0.101, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
@@ -680,7 +680,7 @@ def build_comparison_timeseries(base, cmp_res):
     ax_z.set_ylim(0.0, 1.0)
     ax_v.set_ylim(0.0, 1.0)
     _foreground(ax_z, ax_v)
-    fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
+    fig.subplots_adjust(left=0.078, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
@@ -703,7 +703,7 @@ def build_phase_pert(base, cmp_res):
     ax.set_xlim(0.0, 1.0)
     ax.set_ylim(0.0, 1.0)
     _foreground(ax)
-    fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
+    fig.subplots_adjust(left=0.101, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
