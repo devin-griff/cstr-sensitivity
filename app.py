@@ -724,8 +724,12 @@ with st.sidebar:
     _ic_controls()
     st.markdown("## Local Feedback Gains")
     _base = st.session_state.get("base")
-    show(build_gain_chart,
-         _base if (_base is not None and _base["K"] is not None) else None)
+    # Fixed-height box reserves the chart's space before the image
+    # arrives, so the Perturbed Start section below never moves while
+    # the figure renders.
+    with st.container(height=190, border=False):
+        show(build_gain_chart,
+             _base if (_base is not None and _base["K"] is not None) else None)
     _perturb_controls()
 
 
