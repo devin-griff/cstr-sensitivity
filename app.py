@@ -40,8 +40,10 @@ import base64
 import contextlib
 import gc
 import io
+import os
 import queue
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -209,7 +211,8 @@ def build_model(zc0, zt0):
     pyo.TransformationFactory("dae.collocation").apply_to(
         m, wrt=m.t, nfe=N, ncp=3, scheme="LAGRANGE-RADAU")
     pyo.TransformationFactory("cvp.parameterize").apply_to(m)
-    declare_sens_param(m.zc0, m.zt0)
+    declare_sens_param(m.zc0)  # one param per call: the released
+    declare_sens_param(m.zt0)  # 0.8.0 API (calls accumulate)
     return m
 
 
@@ -338,12 +341,31 @@ class _SolveLogCapture(io.TextIOBase):
 
 @contextlib.contextmanager
 def _capture_stdout():
+    """Capture the solve window at both levels: the sys.stdout object
+    (pyomo's tee machinery) and file descriptor 1, because the released
+    pounce engine writes its iteration log straight to the fd, bypassing
+    Python. Solves run one at a time on the worker thread, so the fd swap
+    window is serialized; the fd text is appended to the buffer on exit
+    (empty when a newer pounce already routes everything through
+    sys.stdout)."""
     cap = _SolveLogCapture(sys.stdout)
     sys.stdout = cap
+    saved_fd = os.dup(1)
+    fd_file = tempfile.TemporaryFile(mode="w+b")
+    os.dup2(fd_file.fileno(), 1)
     try:
         yield cap.buf
     finally:
         sys.stdout = cap.real
+        os.dup2(saved_fd, 1)
+        os.close(saved_fd)
+        try:
+            fd_file.seek(0)
+            text = fd_file.read().decode("utf-8", "replace")
+        finally:
+            fd_file.close()
+        if text:
+            cap.buf.write(text)
 
 
 def _solve_job(w, zc0, zt0):
