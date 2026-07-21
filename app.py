@@ -934,17 +934,6 @@ with tab_ts:
         with col_text:
             st.info("Set the initial condition in the sidebar and click "
                     "**Solve**.")
-            st.markdown(
-                "1. **Solve** computes the optimal trajectories back to the "
-                "reactor's unstable steady state, and the local gain matrix "
-                "appears with them: read straight from the solver's held "
-                "factorization, no extra run.\n"
-                "2. A **Perturbed Start** section then opens in the sidebar: "
-                "**estimate()** predicts the entire re-optimized solution "
-                "at the new start in microseconds.\n"
-                "3. **Re-solve** computes the exact answer for comparison, "
-                "with timings for both."
-            )
     else:
         col_l, col_r = st.columns(2)
         with col_l:
