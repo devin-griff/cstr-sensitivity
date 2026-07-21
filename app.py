@@ -1000,13 +1000,16 @@ with tab_logs:
 (function() {{
     // re-render key (forces this script to run per new entry): {len(events)}-{events[-1]['n']}
     const doc = window.parent.document;
+    // The height-limited container's scrolling element is a nested
+    // stVerticalBlock with overflow-y auto (verified in the live DOM);
+    // it is the only such element under stMain.
     const scrollBottom = () => {{
-        const sel = '[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]';
-        for (const w of doc.querySelectorAll(sel)) {{
-            for (const el of [w, ...w.children]) {{
-                if (el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 20) {{
-                    el.scrollTop = el.scrollHeight;
-                }}
+        const sel = '[data-testid="stMain"] [data-testid="stVerticalBlock"]';
+        for (const el of doc.querySelectorAll(sel)) {{
+            const oy = getComputedStyle(el).overflowY;
+            if ((oy === 'auto' || oy === 'scroll') && el.clientHeight > 0
+                    && el.scrollHeight > el.clientHeight) {{
+                el.scrollTop = el.scrollHeight;
             }}
         }}
     }};
@@ -1015,8 +1018,9 @@ with tab_logs:
     tick();
     if (!window.parent.__logsScrollWired) {{
         window.parent.__logsScrollWired = true;
+        // Streamlit tabs are div[role="tab"], not buttons.
         doc.addEventListener('click', (e) => {{
-            const t = e.target.closest && e.target.closest('button[role="tab"]');
+            const t = e.target.closest && e.target.closest('[role="tab"]');
             if (t && t.textContent.includes('Logs')) setTimeout(scrollBottom, 80);
         }}, true);
     }}
