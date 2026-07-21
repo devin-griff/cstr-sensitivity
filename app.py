@@ -28,8 +28,8 @@
 #      + Estimate & Re-solve (shown once a baseline solve exists).
 #   3. build_model / solve_baseline / run_perturbation: the computation.
 #   4. Figure builders: baseline and perturbed time series and phase
-#      planes, each side-by-side pair on shared axis limits; the static
-#      schematic ships pre-rendered as schematic.png.
+#      planes, all on fixed [0, 1] axes; the static schematic ships
+#      pre-rendered as schematic.png.
 #   5. render_formulation_tab: static markdown reference material.
 #   6. Main layout: four tabs (Time Series, Phase Plot, Formulation, Logs).
 # =============================================================================
@@ -578,10 +578,10 @@ def build_gain_chart(base):
     return fig
 
 
-def build_timeseries(base, ylims=None):
-    """Baseline optimal trajectories: states over controls, targets dashed.
-    ylims, when given, is the shared (states, controls) y-ranges so the
-    side-by-side comparison reads directly."""
+def build_timeseries(base):
+    """Baseline optimal trajectories: states over controls, targets
+    dashed. All axes fixed to [0, 1]: every plotted quantity lives
+    there, and the figures never rescale."""
     ts, traj = base["ts"], base["traj"]
     fig, (ax_z, ax_v) = plt.subplots(2, 1, figsize=(7.0, 5.2), sharex=True)
     ax_z.plot(ts, traj["zc"], color=WONG[0], label="$z_c$ concentration")
@@ -599,17 +599,15 @@ def build_timeseries(base, ylims=None):
     ax_v.set_ylabel("controls")
     ax_v.set_xlabel("time")
     ax_v.legend(loc="lower right")
-    if ylims is not None:
-        ax_z.set_ylim(*ylims[0])
-        ax_v.set_ylim(*ylims[1])
+    ax_z.set_ylim(0.0, 1.0)
+    ax_v.set_ylim(0.0, 1.0)
     fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
-def build_phase(base, lims=None):
+def build_phase(base):
     """Baseline trajectory in the phase plane: initial condition (dot) into
-    the steady-state target (cross), dots at the sample times. lims, when
-    given, is the shared (x, y) ranges of the phase pair."""
+    the steady-state target (cross), dots at the sample times."""
     ts, traj, idx = base["ts"], base["traj"], base["sample_idx"]
     fig, ax = plt.subplots(figsize=(5.6, 4.6))
     ax.plot(traj["zc"], traj["zt"], color=WONG[0], label="state trajectory")
@@ -620,14 +618,13 @@ def build_phase(base, lims=None):
     ax.set_xlabel("$z_c$ concentration")
     ax.set_ylabel("$z_t$ temperature")
     ax.legend()
-    if lims is not None:
-        ax.set_xlim(*lims[0])
-        ax.set_ylim(*lims[1])
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
     fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
-def build_comparison_timeseries(base, cmp_res, ylims=None):
+def build_comparison_timeseries(base, cmp_res):
     """Perturbed start in time: the sensitivity estimate (dashed) against
     the exact re-solve (solid), states over controls, targets dotted."""
     ts = base["ts"]
@@ -654,14 +651,13 @@ def build_comparison_timeseries(base, cmp_res, ylims=None):
     ax_v.set_ylabel("controls")
     ax_v.set_xlabel("time")
     ax_v.legend(loc="lower right", fontsize=8)
-    if ylims is not None:
-        ax_z.set_ylim(*ylims[0])
-        ax_v.set_ylim(*ylims[1])
+    ax_z.set_ylim(0.0, 1.0)
+    ax_v.set_ylim(0.0, 1.0)
     fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
-def build_phase_pert(base, cmp_res, lims=None):
+def build_phase_pert(base, cmp_res):
     """Perturbed start in the phase plane: the exact re-solve (solid, dots
     at the sample times) against the sensitivity estimate (dashed)."""
     idx = base["sample_idx"]
@@ -677,35 +673,10 @@ def build_phase_pert(base, cmp_res, lims=None):
     ax.set_xlabel("$z_c$ concentration")
     ax.set_ylabel("$z_t$ temperature")
     ax.legend()
-    if lims is not None:
-        ax.set_xlim(*lims[0])
-        ax.set_ylim(*lims[1])
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(0.0, 1.0)
     fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
-
-
-def _padded(vals, frac=0.06):
-    lo, hi = min(vals), max(vals)
-    pad = frac * (hi - lo if hi > lo else 1.0)
-    return lo - pad, hi + pad
-
-
-def shared_limits(base, cmp_res):
-    """Identical axis limits for the side-by-side pairs, from the union of
-    the baseline and perturbed datasets: states and controls y-ranges for
-    the time-series pair, (x, y) for the phase pair."""
-    traj, pert, pred = base["traj"], cmp_res["pert"], cmp_res["pred"]
-    zc = (traj["zc"] + pert["zc"] + pred["zc"]
-          + [ZC_SS, base["inputs"][0], cmp_res["pert_inputs"][0]])
-    zt = (traj["zt"] + pert["zt"] + pred["zt"]
-          + [ZT_SS, base["inputs"][1], cmp_res["pert_inputs"][1]])
-    controls = (traj["v1"] + pert["v1"] + pred["v1"]
-                + traj["v2"] + pert["v2"] + pred["v2"] + [V1_SS, V2_SS])
-    return {
-        "states": _padded(zc + zt),
-        "controls": _padded(controls),
-        "phase": (_padded(zc), _padded(zt)),
-    }
 
 
 # matplotlib's shared state (the mathtext parser especially) is not
@@ -926,7 +897,6 @@ cmp_res = st.session_state.get("cmp")
 # a new solve clears it, so a mismatch just means "not estimated yet".
 cmp_ok = (base is not None and cmp_res is not None
           and cmp_res["base_inputs"] == base["inputs"])
-lims = shared_limits(base, cmp_res) if cmp_ok else None
 
 
 def _prompt_estimate():
@@ -948,16 +918,13 @@ with tab_ts:
         col_l, col_r = st.columns(2)
         with col_l:
             st.markdown("#### Baseline")
-            show(build_timeseries, base,
-                 (lims["states"], lims["controls"]) if cmp_ok else None,
-                 fixed_frame=True)
+            show(build_timeseries, base, fixed_frame=True)
         with col_r:
             st.markdown("#### Perturbed start")
             if not cmp_ok:
                 _prompt_estimate()
             else:
                 show(build_comparison_timeseries, base, cmp_res,
-                     (lims["states"], lims["controls"]),
                      fixed_frame=True)
 
 with tab_ph:
@@ -970,15 +937,13 @@ with tab_ph:
         col_l, col_r = st.columns(2)
         with col_l:
             st.markdown("#### Baseline")
-            show(build_phase, base, lims["phase"] if cmp_ok else None,
-                 fixed_frame=True)
+            show(build_phase, base, fixed_frame=True)
         with col_r:
             st.markdown("#### Perturbed start")
             if not cmp_ok:
                 _prompt_estimate()
             else:
-                show(build_phase_pert, base, cmp_res, lims["phase"],
-                     fixed_frame=True)
+                show(build_phase_pert, base, cmp_res, fixed_frame=True)
 
 with tab_form:
     render_formulation_tab()
