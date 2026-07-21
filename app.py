@@ -477,7 +477,7 @@ def run_perturbation(base, zc0p, zt0p):
 @st.fragment
 def _ic_controls():
     st.markdown("## Initial Condition")
-    zc0 = st.slider("$z_c$ concentration", 0.0, 1.0, 0.62, 0.01,
+    zc0 = st.slider("$z_c$ concentration", 0.0, 1.0, 0.0, 0.01,
                     format="%.2f", key="zc0")
     zt0 = st.slider("$z_t$ temperature", 0.52, 0.70, 0.52, 0.01,
                     format="%.2f", key="zt0")
