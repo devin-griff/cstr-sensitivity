@@ -226,10 +226,14 @@ def extract(m, ts):
 
 def log_event(title, body=None):
     """Append to the session event log: a one-liner, or a title plus a
-    captured solver log. The log keeps the most recent 50 entries."""
+    captured solver log. Entries are numbered by a running per-session
+    counter (numbers survive trimming), and the log keeps the most
+    recent 50."""
+    n = st.session_state.get("event_count", 0) + 1
+    st.session_state["event_count"] = n
     events = st.session_state.setdefault("events", [])
-    events.append(
-        {"stamp": time.strftime("%H:%M:%S"), "title": title, "body": body})
+    events.append({"n": n, "stamp": time.strftime("%H:%M:%S"),
+                   "title": title, "body": body})
     if len(events) > 50:
         del events[:len(events) - 50]
 
@@ -432,13 +436,10 @@ def solve_baseline(zc0, zt0):
     Solves are numbered per session, and every event names the solve it
     belongs to."""
     res = _worker().call(_solve_job, zc0, zt0)
-    n = st.session_state.get("solve_count", 0) + 1
-    st.session_state["solve_count"] = n
-    res["n"] = n
-    log_event(f"solve {n} from zc(0) = {zc0:.2f}, zt(0) = {zt0:.2f}: "
+    log_event(f"solve from zc(0) = {zc0:.2f}, zt(0) = {zt0:.2f}: "
               f"{res['status']} in {res['solve_s']:.2f} s", res.pop("log"))
     if res["K"] is not None:
-        log_event(f"solve {n} gain matrix: 4 backsolves against the held "
+        log_event(f"gain matrix: 4 backsolves against the held "
                   f"factorization in {res['gain_s'] * 1e6:.0f} microseconds")
     return res
 
@@ -447,13 +448,11 @@ def run_perturbation(base, zc0p, zt0p):
     """Estimate and re-solve on the worker thread, then record the events.
     Raises LookupError when the stored baseline has been evicted."""
     res = _worker().call(_perturb_job, base["token"], zc0p, zt0p)
-    n = base["n"]
-    log_event(f"solve {n} estimate at zc(0) = {zc0p:.2f}, "
-              f"zt(0) = {zt0p:.2f}: full-solution prediction in "
-              f"{res['est_s'] * 1e6:.0f} microseconds, no solver run")
-    log_event(f"solve {n} re-solve from zc(0) = {zc0p:.2f}, "
-              f"zt(0) = {zt0p:.2f}: {res['status']} in "
-              f"{res['resolve_s']:.2f} s", res.pop("log"))
+    log_event(f"estimate at zc(0) = {zc0p:.2f}, zt(0) = {zt0p:.2f}: "
+              f"full-solution prediction in {res['est_s'] * 1e6:.0f} "
+              f"microseconds, no solver run")
+    log_event(f"re-solve from zc(0) = {zc0p:.2f}, zt(0) = {zt0p:.2f}: "
+              f"{res['status']} in {res['resolve_s']:.2f} s", res.pop("log"))
     res["base_inputs"] = base["inputs"]
     return res
 
@@ -985,6 +984,7 @@ with tab_logs:
                 "backsolves.")
     else:
         for ev in reversed(events):
-            st.markdown(f"**{ev['stamp']} &nbsp; {ev['title']}**")
+            st.markdown(f"**{ev['n']} &nbsp;·&nbsp; {ev['stamp']} &nbsp; "
+                        f"{ev['title']}**")
             if ev["body"]:
                 st.code(ev["body"], language=None)
