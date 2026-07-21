@@ -602,7 +602,7 @@ def build_timeseries(base, ylims=None):
     if ylims is not None:
         ax_z.set_ylim(*ylims[0])
         ax_v.set_ylim(*ylims[1])
-    fig.tight_layout()
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
@@ -623,7 +623,7 @@ def build_phase(base, lims=None):
     if lims is not None:
         ax.set_xlim(*lims[0])
         ax.set_ylim(*lims[1])
-    fig.tight_layout()
+    fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
@@ -657,7 +657,7 @@ def build_comparison_timeseries(base, cmp_res, ylims=None):
     if ylims is not None:
         ax_z.set_ylim(*ylims[0])
         ax_v.set_ylim(*ylims[1])
-    fig.tight_layout()
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.97, bottom=0.10, hspace=0.10)
     return fig
 
 
@@ -680,7 +680,7 @@ def build_phase_pert(base, cmp_res, lims=None):
     if lims is not None:
         ax.set_xlim(*lims[0])
         ax.set_ylim(*lims[1])
-    fig.tight_layout()
+    fig.subplots_adjust(left=0.14, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
@@ -716,12 +716,19 @@ def shared_limits(base, cmp_res):
 _MPL_LOCK = threading.RLock()
 
 
-def show(builder, *args):
+def show(builder, *args, fixed_frame=False):
     # No explicit width argument on st.pyplot: the default stretches to
     # the container, and the legacy use_container_width= is deprecated.
+    # fixed_frame skips Streamlit's tight bounding-box trim: the paired
+    # figures use fixed subplot margins instead, so their frames stay
+    # pixel-stationary when the shared axis limits change (a tight trim
+    # would shift with every tick-label width).
     with _MPL_LOCK:
         fig = builder(*args)
-        st.pyplot(fig)
+        if fixed_frame:
+            st.pyplot(fig, bbox_inches=None)
+        else:
+            st.pyplot(fig)
         plt.close(fig)
 
 
@@ -942,14 +949,16 @@ with tab_ts:
         with col_l:
             st.markdown("#### Baseline")
             show(build_timeseries, base,
-                 (lims["states"], lims["controls"]) if cmp_ok else None)
+                 (lims["states"], lims["controls"]) if cmp_ok else None,
+                 fixed_frame=True)
         with col_r:
             st.markdown("#### Perturbed start")
             if not cmp_ok:
                 _prompt_estimate()
             else:
                 show(build_comparison_timeseries, base, cmp_res,
-                     (lims["states"], lims["controls"]))
+                     (lims["states"], lims["controls"]),
+                     fixed_frame=True)
 
 with tab_ph:
     if base is None:
@@ -961,13 +970,15 @@ with tab_ph:
         col_l, col_r = st.columns(2)
         with col_l:
             st.markdown("#### Baseline")
-            show(build_phase, base, lims["phase"] if cmp_ok else None)
+            show(build_phase, base, lims["phase"] if cmp_ok else None,
+                 fixed_frame=True)
         with col_r:
             st.markdown("#### Perturbed start")
             if not cmp_ok:
                 _prompt_estimate()
             else:
-                show(build_phase_pert, base, cmp_res, lims["phase"])
+                show(build_phase_pert, base, cmp_res, lims["phase"],
+                     fixed_frame=True)
 
 with tab_form:
     render_formulation_tab()
