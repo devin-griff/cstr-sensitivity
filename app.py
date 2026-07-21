@@ -502,9 +502,9 @@ def _ic_controls():
 @st.fragment
 def _perturb_controls():
     st.markdown("## Perturbed Start")
-    zc0p = st.slider("$z_c$ concentration", 0.0, 1.0, 0.61, 0.01,
+    zc0p = st.slider("$z_c$ concentration", 0.0, 1.0, 0.05, 0.01,
                      format="%.2f", key="zc0p")
-    zt0p = st.slider("$z_t$ temperature", 0.52, 0.70, 0.54, 0.01,
+    zt0p = st.slider("$z_t$ temperature", 0.52, 0.70, 0.53, 0.01,
                      format="%.2f", key="zt0p")
     base = st.session_state.get("base")
     cmp_res = st.session_state.get("cmp")
@@ -825,9 +825,10 @@ factorization from its last iteration. sIPOPT-style parametric sensitivity
   is one backsolve: the derivative of a first control move with respect to
   one component of the initial state. This is the local feedback law
   around the solved trajectory.
-- **The full re-optimized solution at a perturbed start.** `estimate()`
-  applies the same backsolve to every variable at once, a first-order
-  Taylor step of the entire solution in the initial condition. This is
+- **A first-order estimate of the re-optimized solution at a perturbed
+  start.** `estimate()` applies the same backsolve to every variable at
+  once, a first-order Taylor step of the entire solution in the initial
+  condition. This is
   the heart of advanced-step NMPC [3]: the estimate is excellent near the
   solved point and degrades as the perturbation grows, and the app lets
   you push it until it breaks. The exact re-solve runs on a copy of the
