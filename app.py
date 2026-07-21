@@ -563,8 +563,12 @@ def build_gain_chart(base):
                         ha="left" if v >= 0 else "right", fontsize=8)
         lo = min(vals + [0.0])
         hi = max(vals + [0.0])
-        pad = 0.18 * (hi - lo if hi > lo else 1.0)
-        ax.set_xlim(lo - pad, hi + pad)
+        rng = hi - lo if hi > lo else 1.0
+        # A side with a bar carries the value annotation beyond the bar
+        # tip: pad that side generously so the text never overlaps the
+        # tick labels or clips at the frame.
+        ax.set_xlim(lo - (0.32 if lo < 0 else 0.05) * rng,
+                    hi + (0.32 if hi > 0 else 0.05) * rng)
     else:
         ax.set_xlim(-1.0, 1.0)
     ax.axvline(0, color="k", lw=1)
