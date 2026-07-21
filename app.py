@@ -27,10 +27,11 @@
 #   2. Sidebar: initial-condition sliders + Solve, perturbed-start sliders
 #      + Estimate & Re-solve (shown once a baseline solve exists).
 #   3. build_model / solve_baseline / run_perturbation: the computation.
-#   4. Figure builders: time series, phase plane, comparison; the static
+#   4. Figure builders: baseline and perturbed time series and phase
+#      planes, each side-by-side pair on shared axis limits; the static
 #      schematic ships pre-rendered as schematic.png.
 #   5. render_formulation_tab: static markdown reference material.
-#   6. Main layout: three tabs (Demo, Formulation, Logs).
+#   6. Main layout: four tabs (Time Series, Phase Plot, Formulation, Logs).
 # =============================================================================
 
 import atexit
@@ -559,8 +560,10 @@ def build_gain_chart(base):
     return fig
 
 
-def build_timeseries(base):
-    """Baseline optimal trajectories: states over controls, targets dashed."""
+def build_timeseries(base, ylims=None):
+    """Baseline optimal trajectories: states over controls, targets dashed.
+    ylims, when given, is the shared (states, controls) y-ranges so the
+    side-by-side comparison reads directly."""
     ts, traj = base["ts"], base["traj"]
     fig, (ax_z, ax_v) = plt.subplots(2, 1, figsize=(7.0, 5.2), sharex=True)
     ax_z.plot(ts, traj["zc"], color=WONG[0], label="$z_c$ concentration")
@@ -578,13 +581,17 @@ def build_timeseries(base):
     ax_v.set_ylabel("controls")
     ax_v.set_xlabel("time")
     ax_v.legend(loc="lower right")
+    if ylims is not None:
+        ax_z.set_ylim(*ylims[0])
+        ax_v.set_ylim(*ylims[1])
     fig.tight_layout()
     return fig
 
 
-def build_phase(base):
+def build_phase(base, lims=None):
     """Baseline trajectory in the phase plane: initial condition (dot) into
-    the steady-state target (cross), dots at the sample times."""
+    the steady-state target (cross), dots at the sample times. lims, when
+    given, is the shared (x, y) ranges of the phase pair."""
     ts, traj, idx = base["ts"], base["traj"], base["sample_idx"]
     fig, ax = plt.subplots(figsize=(5.6, 4.6))
     ax.plot(traj["zc"], traj["zt"], color=WONG[0], label="state trajectory")
@@ -595,57 +602,92 @@ def build_phase(base):
     ax.set_xlabel("$z_c$ concentration")
     ax.set_ylabel("$z_t$ temperature")
     ax.legend()
+    if lims is not None:
+        ax.set_xlim(*lims[0])
+        ax.set_ylim(*lims[1])
     fig.tight_layout()
     return fig
 
 
-def build_comparison(base, cmp_res):
-    """Perturbed start: the sensitivity estimate (dashed) against the exact
-    re-solve (solid), states and controls in time plus the phase plane."""
-    ts, idx = base["ts"], base["sample_idx"]
+def build_comparison_timeseries(base, cmp_res, ylims=None):
+    """Perturbed start in time: the sensitivity estimate (dashed) against
+    the exact re-solve (solid), states over controls, targets dotted."""
+    ts = base["ts"]
     pert, pred = cmp_res["pert"], cmp_res["pred"]
-    zc0p, zt0p = cmp_res["pert_inputs"]
+    fig, (ax_z, ax_v) = plt.subplots(2, 1, figsize=(7.0, 5.2), sharex=True)
+    ax_z.plot(ts, pert["zc"], color=WONG[0], label="$z_c$ re-solve")
+    ax_z.plot(ts, pert["zt"], color=WONG[1], label="$z_t$ re-solve")
+    ax_z.plot(ts, pred["zc"], color=WONG[0], ls="--", label="$z_c$ estimate")
+    ax_z.plot(ts, pred["zt"], color=WONG[1], ls="--", label="$z_t$ estimate")
+    ax_z.axhline(ZC_SS, color=WONG[0], ls=":", lw=1, alpha=0.6)
+    ax_z.axhline(ZT_SS, color=WONG[1], ls=":", lw=1, alpha=0.6)
+    ax_z.set_ylabel("states")
+    ax_z.legend(loc="lower right", fontsize=8)
+    ax_v.step(ts, pert["v1"], where="post", color=WONG[2],
+              label="$v_1$ re-solve")
+    ax_v.step(ts, pert["v2"], where="post", color=WONG[3],
+              label="$v_2$ re-solve")
+    ax_v.step(ts, pred["v1"], where="post", color=WONG[2], ls="--",
+              label="$v_1$ estimate")
+    ax_v.step(ts, pred["v2"], where="post", color=WONG[3], ls="--",
+              label="$v_2$ estimate")
+    ax_v.axhline(V1_SS, color=WONG[2], ls=":", lw=1, alpha=0.6)
+    ax_v.axhline(V2_SS, color=WONG[3], ls=":", lw=1, alpha=0.6)
+    ax_v.set_ylabel("controls")
+    ax_v.set_xlabel("time")
+    ax_v.legend(loc="lower right", fontsize=8)
+    if ylims is not None:
+        ax_z.set_ylim(*ylims[0])
+        ax_v.set_ylim(*ylims[1])
+    fig.tight_layout()
+    return fig
 
-    fig, axes = plt.subplot_mosaic(
-        [["states", "phase"], ["controls", "phase"]], figsize=(11.5, 5.2))
-    axes["controls"].sharex(axes["states"])
 
-    ax = axes["states"]
-    ax.plot(ts, pert["zc"], color=WONG[0], label="$z_c$ re-solve")
-    ax.plot(ts, pert["zt"], color=WONG[1], label="$z_t$ re-solve")
-    ax.plot(ts, pred["zc"], color=WONG[0], ls="--", label="$z_c$ estimate")
-    ax.plot(ts, pred["zt"], color=WONG[1], ls="--", label="$z_t$ estimate")
-    ax.axhline(ZC_SS, color=WONG[0], ls=":", lw=1, alpha=0.6)
-    ax.axhline(ZT_SS, color=WONG[1], ls=":", lw=1, alpha=0.6)
-    ax.set_ylabel("states")
-    ax.legend(fontsize=8)
-
-    ax = axes["controls"]
-    ax.step(ts, pert["v1"], where="post", color=WONG[2], label="$v_1$ re-solve")
-    ax.step(ts, pert["v2"], where="post", color=WONG[3], label="$v_2$ re-solve")
-    ax.step(ts, pred["v1"], where="post", color=WONG[2], ls="--",
-            label="$v_1$ estimate")
-    ax.step(ts, pred["v2"], where="post", color=WONG[3], ls="--",
-            label="$v_2$ estimate")
-    ax.axhline(V1_SS, color=WONG[2], ls=":", lw=1, alpha=0.6)
-    ax.axhline(V2_SS, color=WONG[3], ls=":", lw=1, alpha=0.6)
-    ax.set_xlabel("time")
-    ax.set_ylabel("controls")
-    ax.legend(fontsize=8)
-
-    ax = axes["phase"]
+def build_phase_pert(base, cmp_res, lims=None):
+    """Perturbed start in the phase plane: the exact re-solve (solid, dots
+    at the sample times) against the sensitivity estimate (dashed)."""
+    idx = base["sample_idx"]
+    pert, pred = cmp_res["pert"], cmp_res["pred"]
+    fig, ax = plt.subplots(figsize=(5.6, 4.6))
     ax.plot(pert["zc"], pert["zt"], color=WONG[0], label="re-solve")
     ax.plot([pert["zc"][k] for k in idx], [pert["zt"][k] for k in idx],
             ".", color=WONG[0], ms=6, alpha=0.7)
     ax.plot(pred["zc"], pred["zt"], color=WONG[2], ls="--",
             label="sensitivity estimate")
-    ax.plot(zc0p, zt0p, "o", color=WONG[0], ms=8)
-    ax.plot(ZC_SS, ZT_SS, "X", color="k", ms=10)
-    ax.set_xlabel("$z_c$")
-    ax.set_ylabel("$z_t$")
-    ax.legend(fontsize=8)
+    ax.plot(*cmp_res["pert_inputs"], "o", color=WONG[0], ms=9)
+    ax.plot(ZC_SS, ZT_SS, "X", color="k", ms=10, label="steady-state target")
+    ax.set_xlabel("$z_c$ concentration")
+    ax.set_ylabel("$z_t$ temperature")
+    ax.legend()
+    if lims is not None:
+        ax.set_xlim(*lims[0])
+        ax.set_ylim(*lims[1])
     fig.tight_layout()
     return fig
+
+
+def _padded(vals, frac=0.06):
+    lo, hi = min(vals), max(vals)
+    pad = frac * (hi - lo if hi > lo else 1.0)
+    return lo - pad, hi + pad
+
+
+def shared_limits(base, cmp_res):
+    """Identical axis limits for the side-by-side pairs, from the union of
+    the baseline and perturbed datasets: states and controls y-ranges for
+    the time-series pair, (x, y) for the phase pair."""
+    traj, pert, pred = base["traj"], cmp_res["pert"], cmp_res["pred"]
+    zc = (traj["zc"] + pert["zc"] + pred["zc"]
+          + [ZC_SS, base["inputs"][0], cmp_res["pert_inputs"][0]])
+    zt = (traj["zt"] + pert["zt"] + pred["zt"]
+          + [ZT_SS, base["inputs"][1], cmp_res["pert_inputs"][1]])
+    controls = (traj["v1"] + pert["v1"] + pred["v1"]
+                + traj["v2"] + pert["v2"] + pred["v2"] + [V1_SS, V2_SS])
+    return {
+        "states": _padded(zc + zt),
+        "controls": _padded(controls),
+        "phase": (_padded(zc), _padded(zt)),
+    }
 
 
 # matplotlib's shared state (the mathtext parser especially) is not
@@ -825,17 +867,33 @@ with _caption_col:
         "condition. Local feedback gains come automatically from "
         "pyomo-pounce. Then, perturb the initial condition to see the "
         "estimated trajectory as well as the resolved trajectory. "
-        "**Demo** shows the results, **Formulation** explains the model, "
-        "and **Logs** keeps the session's event log."
+        "**Time Series** and **Phase Plot** show the results, "
+        "**Formulation** explains the model, and **Logs** keeps the "
+        "session's event log."
     )
 
-tab_demo, tab_form, tab_logs = st.tabs(["📈  Demo", "📐  Formulation",
-                                        "📋  Logs"])
+tab_ts, tab_ph, tab_form, tab_logs = st.tabs(
+    ["📈  Time Series", "🌀  Phase Plot", "📐  Formulation", "📋  Logs"])
 
 base = st.session_state.get("base")
 cmp_res = st.session_state.get("cmp")
+# The comparison only renders against the baseline it was computed from;
+# a new solve clears it, so a mismatch just means "not estimated yet".
+cmp_ok = (base is not None and cmp_res is not None
+          and cmp_res["base_inputs"] == base["inputs"])
+lims = shared_limits(base, cmp_res) if cmp_ok else None
 
-with tab_demo:
+
+def _prompt_estimate():
+    if base["K"] is None:
+        st.info("No held factorization to estimate from.")
+    else:
+        st.info("Choose a perturbed start in the sidebar and click "
+                "**Estimate then Re-solve**: the plant never starts "
+                "exactly where the last solve assumed.")
+
+
+with tab_ts:
     if base is None:
         col_text, _ = st.columns([6, 3])
         with col_text:
@@ -853,13 +911,24 @@ with tab_demo:
                 "with timings for both."
             )
     else:
-        col_ts, col_ph = st.columns([11, 9])
-        with col_ts:
+        col_l, col_r = st.columns(2)
+        with col_l:
             st.markdown("#### Optimal trajectories")
-            show(build_timeseries, base)
-        with col_ph:
-            st.markdown("#### Phase plane")
-            show(build_phase, base)
+            show(build_timeseries, base,
+                 (lims["states"], lims["controls"]) if cmp_ok else None)
+        with col_r:
+            st.markdown("#### Perturbed start: estimate versus re-solve")
+            if not cmp_ok:
+                _prompt_estimate()
+            else:
+                speedup = cmp_res["resolve_s"] / max(cmp_res["est_s"], 1e-9)
+                st.caption(
+                    f"Estimate: {cmp_res['est_s'] * 1e6:.0f} µs, no solver "
+                    f"run. Re-solve: {cmp_res['resolve_s'] * 1e3:.0f} ms "
+                    f"({speedup:,.0f}x more)."
+                )
+                show(build_comparison_timeseries, base, cmp_res,
+                     (lims["states"], lims["controls"]))
 
         col_gain, _ = st.columns([5, 4])
         with col_gain:
@@ -881,56 +950,23 @@ with tab_demo:
                     f"{base['gain_s'] * 1e6:.0f} µs."
                 )
 
-        st.divider()
-        st.markdown("#### Perturbed start: estimate versus re-solve")
-        if base["K"] is None:
-            st.info("No held factorization to estimate from.")
-        elif cmp_res is None:
-            st.info("Choose a perturbed start in the sidebar and click "
-                    "**Estimate + Re-solve**: the plant never starts exactly "
-                    "where the last solve assumed.")
-        elif cmp_res["base_inputs"] != base["inputs"]:
-            st.info("The baseline changed: click **Estimate + Re-solve** to "
-                    "compare against the new solution.")
-        else:
-            zc0p_r, zt0p_r = cmp_res["pert_inputs"]
-            mv = cmp_res["moves"]
-            speedup = cmp_res["resolve_s"] / max(cmp_res["est_s"], 1e-9)
-            st.markdown(
-                f"From the perturbed start "
-                f"$z_c(0) = {zc0p_r:.2f}$, $z_t(0) = {zt0p_r:.2f}$: the "
-                f"first-order prediction from the baseline factorization "
-                f"(dashed) against the exact re-solve (solid)."
-            )
-            st.markdown(f"""
-<table style="border-collapse: collapse; font-size: 0.95rem; margin: 0.25rem 0 0.5rem 0;">
-  <thead>
-    <tr style="border-bottom: 1px solid #dee2e6;">
-      <th style="padding: 0.4rem 0.9rem;">first move</th>
-      <th style="padding: 0.4rem 0.9rem; text-align: right;">estimate</th>
-      <th style="padding: 0.4rem 0.9rem; text-align: right;">re-solve</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="padding: 0.3rem 0.9rem;">v<sub>1</sub>[0] &nbsp;coolant flow</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{mv["est"][0]:.4f}</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{mv["exact"][0]:.4f}</td>
-    </tr>
-    <tr>
-      <td style="padding: 0.3rem 0.9rem;">v<sub>2</sub>[0] &nbsp;residence time</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{mv["est"][1]:.4f}</td>
-      <td style="padding: 0.3rem 0.9rem; text-align: right;">{mv["exact"][1]:.4f}</td>
-    </tr>
-  </tbody>
-</table>
-""", unsafe_allow_html=True)
-            st.caption(
-                f"Estimate: {cmp_res['est_s'] * 1e6:.0f} µs, no solver "
-                f"run. Re-solve: {cmp_res['resolve_s'] * 1e3:.0f} ms "
-                f"({speedup:,.0f}x more)."
-            )
-            show(build_comparison, base, cmp_res)
+with tab_ph:
+    if base is None:
+        col_text, _ = st.columns([6, 3])
+        with col_text:
+            st.info("Set the initial condition in the sidebar and click "
+                    "**Solve**.")
+    else:
+        col_l, col_r = st.columns(2)
+        with col_l:
+            st.markdown("#### Baseline")
+            show(build_phase, base, lims["phase"] if cmp_ok else None)
+        with col_r:
+            st.markdown("#### Perturbed start")
+            if not cmp_ok:
+                _prompt_estimate()
+            else:
+                show(build_phase_pert, base, cmp_res, lims["phase"])
 
 with tab_form:
     render_formulation_tab()
