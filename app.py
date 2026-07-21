@@ -921,12 +921,6 @@ with tab_ts:
             if not cmp_ok:
                 _prompt_estimate()
             else:
-                speedup = cmp_res["resolve_s"] / max(cmp_res["est_s"], 1e-9)
-                st.caption(
-                    f"Estimate: {cmp_res['est_s'] * 1e6:.0f} µs, no solver "
-                    f"run. Re-solve: {cmp_res['resolve_s'] * 1e3:.0f} ms "
-                    f"({speedup:,.0f}x more)."
-                )
                 show(build_comparison_timeseries, base, cmp_res,
                      (lims["states"], lims["controls"]))
 
