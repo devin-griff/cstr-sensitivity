@@ -67,7 +67,7 @@ WONG = ["#0072B2", "#D55E00", "#009E73", "#CC79A7"]
 # Model dimensions and steady-state targets, shared between the Pyomo model
 # and the figures. The target is the open-loop unstable steady state of the
 # dimensionless Hicks-Ray model (Huang, Patwardhan & Biegler, 2012).
-N, H = 50, 1
+N, H = 100, 1
 ZC_SS, ZT_SS = 0.6416, 0.5387
 V1_SS, V2_SS = 0.57828, 0.49989
 
@@ -147,7 +147,8 @@ st.sidebar.markdown(
 def build_model(zc0, zt0):
     """The Hicks-Ray CSTR optimal control problem, discretized and
     control-parameterized, with the initial condition declared as the
-    sensitivity parameters. Identical to the companion notebook."""
+    sensitivity parameters. Identical to the companion notebook, except
+    the horizon runs N = 100 here versus the notebook's 50."""
     m = pyo.ConcreteModel()
     m.t = ContinuousSet(initialize=pyo.RangeSet(0, N * H, H))
 
@@ -467,11 +468,11 @@ def run_perturbation(base, zc0p, zt0p):
 #
 # Slider ranges: zc(0) spans the state's variable bounds [0, 1]. zt has
 # no upper variable bound, so the cap sits above the operating region.
-# The floor 0.52 is the coldest start from which the trajectory still
-# settles at the steady state within the horizon for every zc(0): below
-# it the Arrhenius term is essentially frozen, the coolant can only
-# remove heat, and ignition takes longer than the horizon (the empty
-# reactor zc(0) = 0 is the binding case, failing up through 0.51).
+# The floor 0.52 keeps every start settling at the steady state within
+# the horizon for every zc(0) (swept at N = 50; N = 100 would allow
+# 0.49 but no colder: below that the Arrhenius term is essentially
+# frozen, the coolant can only remove heat, and ignition outlasts any
+# reasonable horizon; the empty reactor zc(0) = 0 is the binding case).
 
 @st.fragment
 def _ic_controls():
@@ -793,7 +794,7 @@ v<sub>2</sub><sup>ss</sup> = 0.49989
 
 An NMPC controller computes its action by solving an optimal control
 problem from the plant's current state. Here that problem is direct
-collocation (Radau, 3 points per element) over a horizon of $N = 50$
+collocation (Radau, 3 points per element) over a horizon of $N = 100$
 one-unit sampling intervals, with piecewise-constant controls, one move
 per interval, declared with pyomo-cvp before discretization and
 parameterized after, so each control has exactly one decision variable per
