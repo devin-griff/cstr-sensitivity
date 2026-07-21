@@ -514,10 +514,8 @@ def _perturb_controls():
         st.rerun(scope="app")
 
 
-with st.sidebar:
-    _ic_controls()
-    st.divider()
-    _perturb_controls()
+# The sidebar is assembled further down, after the figure builders exist:
+# the gains chart renders between the two control fragments.
 
 
 # ── Figures ──────────────────────────────────────────────────────────────────
@@ -530,8 +528,11 @@ def show_schematic():
 
 
 def build_gain_chart(base):
-    """The four local gains as sign-colored bars: green above the axis
-    for a positive gain, red below it for a negative one."""
+    """The four local gains as sign-colored horizontal bars, sized for the
+    sidebar: green rightward for a positive gain, red leftward for a
+    negative one, the value at each bar tip. Horizontal because at
+    sidebar width the four partial-derivative labels only fit as y-tick
+    rows."""
     K = base["K"]
     vals = [K[0][0], K[0][1], K[1][0], K[1][1]]
     labels = [r"$\partial v_1 / \partial z_c$",
@@ -539,21 +540,22 @@ def build_gain_chart(base):
               r"$\partial v_2 / \partial z_c$",
               r"$\partial v_2 / \partial z_t$"]
     colors = ["#009E73" if v >= 0 else "#CC3311" for v in vals]
-    fig, ax = plt.subplots(figsize=(5.6, 3.4))
-    ax.bar(range(4), vals, color=colors, width=0.55)
-    ax.axhline(0, color="k", lw=1)
+    fig, ax = plt.subplots(figsize=(3.2, 1.9))
+    ax.barh(range(4), vals, color=colors, height=0.55)
+    ax.axvline(0, color="k", lw=1)
     for k, v in enumerate(vals):
-        ax.annotate(f"{v:.2f}", (k, v),
-                    xytext=(0, 5 if v >= 0 else -5),
-                    textcoords="offset points", ha="center",
-                    va="bottom" if v >= 0 else "top", fontsize=9)
-    ax.set_xticks(range(4))
-    ax.set_xticklabels(labels)
-    ax.set_ylabel("gain")
+        ax.annotate(f"{v:.2f}", (v, k),
+                    xytext=(4 if v >= 0 else -4, 0),
+                    textcoords="offset points", va="center",
+                    ha="left" if v >= 0 else "right", fontsize=8)
+    ax.set_yticks(range(4))
+    ax.set_yticklabels(labels, fontsize=9)
+    ax.invert_yaxis()  # matrix row order, top to bottom
+    ax.tick_params(axis="x", labelsize=8)
     lo = min(vals + [0.0])
     hi = max(vals + [0.0])
-    pad = 0.15 * (hi - lo if hi > lo else 1.0)
-    ax.set_ylim(lo - pad, hi + pad)
+    pad = 0.18 * (hi - lo if hi > lo else 1.0)
+    ax.set_xlim(lo - pad, hi + pad)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     fig.tight_layout()
@@ -705,6 +707,25 @@ def show(builder, *args):
         fig = builder(*args)
         st.pyplot(fig)
         plt.close(fig)
+
+
+# ── Sidebar assembly ─────────────────────────────────────────────────────────
+# The gains section sits between the two control fragments and outside
+# both: it refreshes exactly when a Solve completes (a full-app rerun),
+# and slider drags never touch it. Absent until an optimal solve holds a
+# factorization.
+
+with st.sidebar:
+    _ic_controls()
+    _base = st.session_state.get("base")
+    if _base is not None and _base["K"] is not None:
+        st.divider()
+        st.markdown("## Local Feedback Gains")
+        show(build_gain_chart, _base)
+        st.caption(f"4 backsolves against the held factorization, "
+                   f"{_base['gain_s'] * 1e6:.0f} µs.")
+    st.divider()
+    _perturb_controls()
 
 
 # ── Formulation tab ──────────────────────────────────────────────────────────
@@ -923,26 +944,6 @@ with tab_ts:
             else:
                 show(build_comparison_timeseries, base, cmp_res,
                      (lims["states"], lims["controls"]))
-
-        col_gain, _ = st.columns([5, 4])
-        with col_gain:
-            st.markdown("#### Local feedback gains")
-            if base["K"] is None:
-                st.warning("The solve did not reach an optimal point, so "
-                           "no factorization was retained to read the "
-                           "gains from. Try a different initial condition.")
-            else:
-                st.markdown(
-                    "The first control move differentiated with respect to "
-                    "the initial state: the local feedback law around the "
-                    "solved trajectory."
-                )
-                show(build_gain_chart, base)
-                st.caption(
-                    f"Solve: {base['solve_s']:.2f} s. Gain matrix: 4 "
-                    f"backsolves against the held factorization, "
-                    f"{base['gain_s'] * 1e6:.0f} µs."
-                )
 
 with tab_ph:
     if base is None:
