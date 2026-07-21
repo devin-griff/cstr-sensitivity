@@ -548,6 +548,9 @@ def build_gain_chart(base):
               r"$\partial v_2 / \partial z_c$",
               r"$\partial v_2 / \partial z_t$"]
     fig, ax = plt.subplots(figsize=(3.2, 1.9))
+    # Transparent background: the chart sits on the sidebar's own shade.
+    fig.patch.set_alpha(0.0)
+    ax.set_facecolor("none")
     if base is not None:
         K = base["K"]
         vals = [K[0][0], K[0][1], K[1][0], K[1][1]]
