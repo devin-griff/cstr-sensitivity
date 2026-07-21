@@ -28,8 +28,9 @@
 #      + Estimate & Re-solve (shown once a baseline solve exists).
 #   3. build_model / solve_baseline / run_perturbation: the computation.
 #   4. Figure builders: baseline and perturbed time series and phase
-#      planes, all on fixed [0, 1] axes; the static schematic ships
-#      pre-rendered as schematic.png.
+#      planes on fixed axes ([0, 1] everywhere except the phase plots'
+#      temperature, which spans the realistic trajectory envelope); the
+#      static schematic ships pre-rendered as schematic.png.
 #   5. render_formulation_tab: static markdown reference material.
 #   6. Main layout: four tabs (Time Series, Phase Plot, Formulation, Logs).
 # =============================================================================
@@ -591,15 +592,20 @@ def build_gain_chart(base):
     return fig
 
 
-def _foreground(*axes):
+def _foreground(*axes, unclip=True):
     """Draw the data above the axes frame. Spines render at a higher
-    z-order than lines, so a trajectory sitting exactly on a bound of the
-    fixed [0, 1] canvas would otherwise hide under the frame; unclipping
-    keeps its full line width visible at the edge."""
+    z-order than lines, so a trajectory sitting exactly on an axis bound
+    would otherwise hide under the frame; unclipping additionally keeps
+    the full line width visible at the edge. The phase plots keep
+    clipping (unclip=False): their temperature window is the realistic
+    trajectory envelope (swept extremes 0.458 and 0.816 over the whole
+    slider box), and an estimate extrapolating past it must not spill
+    outside the frame."""
     for ax in axes:
         for artist in ax.lines:
             artist.set_zorder(3)
-            artist.set_clip_on(False)
+            if unclip:
+                artist.set_clip_on(False)
 
 
 def build_timeseries(base):
@@ -644,9 +650,9 @@ def build_phase(base):
     ax.set_ylabel("$z_t$ temperature")
     ax.legend()
     ax.set_xlim(0.0, 1.0)
-    ax.set_ylim(0.0, 1.0)
-    _foreground(ax)
-    fig.subplots_adjust(left=0.101, right=0.97, top=0.97, bottom=0.12)
+    ax.set_ylim(0.45, 0.85)
+    _foreground(ax, unclip=False)
+    fig.subplots_adjust(left=0.118, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
@@ -701,9 +707,9 @@ def build_phase_pert(base, cmp_res):
     ax.set_ylabel("$z_t$ temperature")
     ax.legend()
     ax.set_xlim(0.0, 1.0)
-    ax.set_ylim(0.0, 1.0)
-    _foreground(ax)
-    fig.subplots_adjust(left=0.101, right=0.97, top=0.97, bottom=0.12)
+    ax.set_ylim(0.45, 0.85)
+    _foreground(ax, unclip=False)
+    fig.subplots_adjust(left=0.118, right=0.97, top=0.97, bottom=0.12)
     return fig
 
 
