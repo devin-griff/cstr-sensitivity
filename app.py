@@ -983,8 +983,43 @@ with tab_logs:
                 "for every solve, one-liners for the factorization "
                 "backsolves.")
     else:
-        for ev in reversed(events):
-            st.markdown(f"**{ev['n']} &nbsp;·&nbsp; {ev['stamp']} &nbsp; "
-                        f"{ev['title']}**")
-            if ev["body"]:
-                st.code(ev["body"], language=None)
+        # Chronological, in a fixed-height scroll box pinned to the
+        # newest entry. The pinning JS below scrolls the box on render
+        # (when Logs is the active tab) and on every later click of the
+        # Logs tab button, since tab switches happen client-side with no
+        # rerun. Only height-limited block containers are touched, never
+        # the page scroller.
+        with st.container(height=560, border=False):
+            for ev in events:
+                st.markdown(f"**{ev['n']} &nbsp;·&nbsp; {ev['stamp']} "
+                            f"&nbsp; {ev['title']}**")
+                if ev["body"]:
+                    st.code(ev["body"], language=None)
+        st.iframe(f"""
+<script>
+(function() {{
+    // re-render key (forces this script to run per new entry): {len(events)}-{events[-1]['n']}
+    const doc = window.parent.document;
+    const scrollBottom = () => {{
+        const sel = '[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]';
+        for (const w of doc.querySelectorAll(sel)) {{
+            for (const el of [w, ...w.children]) {{
+                if (el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 20) {{
+                    el.scrollTop = el.scrollHeight;
+                }}
+            }}
+        }}
+    }};
+    let tries = 0;
+    const tick = () => {{ scrollBottom(); if (++tries < 8) setTimeout(tick, 150); }};
+    tick();
+    if (!window.parent.__logsScrollWired) {{
+        window.parent.__logsScrollWired = true;
+        doc.addEventListener('click', (e) => {{
+            const t = e.target.closest && e.target.closest('button[role="tab"]');
+            if (t && t.textContent.includes('Logs')) setTimeout(scrollBottom, 80);
+        }}, true);
+    }}
+}})();
+</script>
+""", height=1)
