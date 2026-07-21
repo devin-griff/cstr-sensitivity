@@ -913,11 +913,11 @@ with tab_ts:
     else:
         col_l, col_r = st.columns(2)
         with col_l:
-            st.markdown("#### Optimal trajectories")
+            st.markdown("#### Baseline")
             show(build_timeseries, base,
                  (lims["states"], lims["controls"]) if cmp_ok else None)
         with col_r:
-            st.markdown("#### Perturbed start: estimate versus re-solve")
+            st.markdown("#### Perturbed start")
             if not cmp_ok:
                 _prompt_estimate()
             else:
