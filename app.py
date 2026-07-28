@@ -744,8 +744,13 @@ def build_phase_pert(base, cmp_res):
 # thread-safe, and Streamlit can interrupt a rerun mid-render while the
 # next script thread draws: without a lock, concurrent "$z_c$" label
 # parses corrupt each other and raise ParseException. One lock covers
-# figure building and rendering together.
-_MPL_LOCK = threading.RLock()
+# figure building and rendering together. The lock must come from
+# st.cache_resource: Streamlit re-executes this script per rerun in a
+# fresh namespace, so a bare module-level lock would be a new object
+# every rerun and would serialize nothing.
+@st.cache_resource(show_spinner=False)
+def _mpl_lock():
+    return threading.RLock()
 
 
 def show(builder, *args, fixed_frame=False):
@@ -755,7 +760,7 @@ def show(builder, *args, fixed_frame=False):
     # figures use fixed subplot margins instead, so their frames stay
     # pixel-stationary when the shared axis limits change (a tight trim
     # would shift with every tick-label width).
-    with _MPL_LOCK:
+    with _mpl_lock():
         fig = builder(*args)
         if fixed_frame:
             st.pyplot(fig, bbox_inches=None)
