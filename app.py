@@ -4,7 +4,8 @@
 # Local feedback gains from one solve. The app solves an optimal control
 # problem for the Hicks-Ray CSTR from a user-chosen initial state, then reads
 # the local gain matrix out of the KKT factorization the solver is already
-# holding: each gain is one backsolve, no extra solver run. From the same
+# holding: one backsolve per initial-state component, no extra solver run,
+# and each backsolve carries every variable's derivative. From the same
 # factorization, estimate() predicts the entire re-optimized solution at a
 # perturbed initial state in microseconds; an exact re-solve (on a clone, so
 # the held factorization stays with the baseline) shows how close the
@@ -376,8 +377,9 @@ def _capture_stdout():
 def _solve_job(w, zc0, zt0):
     """Worker-thread job: build and solve the OCP, then read the gain
     matrix out of the held factorization: the first control move
-    differentiated with respect to the initial state, one backsolve per
-    entry, no extra solve."""
+    differentiated with respect to the initial state. One backsolve per
+    initial-condition parameter yields that parameter's full derivative
+    column, so the 2x2 matrix costs 2 backsolves, no extra solve."""
     m = build_model(zc0, zt0)
     t0 = time.perf_counter()
     with _capture_stdout() as buf:
@@ -467,7 +469,7 @@ def solve_baseline(zc0, zt0):
     log_event(f"solve from zc(0) = {zc0:.2f}, zt(0) = {zt0:.2f}: "
               f"{res['status']} in {res['solve_s']:.2f} s", res.pop("log"))
     if res["K"] is not None:
-        log_event(f"gain matrix: 4 backsolves against the held "
+        log_event(f"gain matrix: 2 backsolves against the held "
                   f"factorization in {res['gain_s'] * 1e6:.0f} microseconds")
     return res
 
@@ -852,14 +854,15 @@ The solver that just found the optimum is still holding the KKT
 factorization from its last iteration. sIPOPT-style parametric sensitivity
 [4] reads two things out of it without any further solver run:
 
-- **The local gain matrix.** Each entry of
+- **The local gain matrix.** One backsolve per initial-state component
+  yields the derivative of every variable with respect to that component,
+  so the four entries of
   $K = \partial (v_{1,0},\, v_{2,0}) \, / \, \partial (z_{c0},\, z_{t0})$
-  is one backsolve: the derivative of a first control move with respect to
-  one component of the initial state. This is the local feedback law
+  are read from two backsolves. This is the local feedback law
   around the solved trajectory.
 - **A first-order estimate of the re-optimized solution at a perturbed
-  start.** `estimate()` applies the same backsolve to every variable at
-  once, a first-order Taylor step of the entire solution in the initial
+  start.** `estimate()` combines the same two derivative columns into a
+  first-order Taylor step of the entire solution in the initial
   condition. This is
   the heart of advanced-step NMPC [3]: the estimate is excellent near the
   solved point and degrades as the perturbation grows, and the app lets
